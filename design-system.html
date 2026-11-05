@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="lenis scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>Ada | Design System &amp; UI Kit (v2.3.0)</title>
+  <meta name="description" content="Sistema de design vivo, guia de estilo interativo e biblioteca de componentes da plataforma Ada Skills.">
+  <link rel="icon" href="site/ada.tech/favicon.png" type="image/png">
+  <link rel="stylesheet" href="site/_runtime/file-fonts.css">
+  <link rel="stylesheet" href="site/unpkg.com/%40phosphor-icons/web%402.1.1/src/regular/style.css">
+  <link rel="stylesheet" href="site/ada.tech/assets/index-CBBxypCd.css">
+  <link rel="stylesheet" href="site/_runtime/style-0.css">
+  <link rel="stylesheet" href="site/_runtime/style-1.css">
+  <style>
+    /* Design System Showcase Helpers */
+    :root {
+      --ds-code-bg: #141414;
+      --ds-code-ink: #FDFBF4;
+    }
+    .ds-section-anchor {
+      scroll-margin-top: 92px;
+    }
+    .ds-swatch-card {
+      transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+    }
+    .ds-swatch-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-soft);
+      border-color: hsl(var(--green-400));
+    }
+    .ds-state-force-hover {
+      transform: translateY(-1px) !important;
+      box-shadow: 0 12px 26px -8px rgba(106, 221, 107, 0.55) !important;
+      background: hsl(var(--green-500)) !important;
+    }
+    .ds-state-force-focus {
+      outline: 2px solid hsl(var(--green-700)) !important;
+      outline-offset: 2px !important;
+      box-shadow: 0 0 0 4px hsl(var(--green-100)) !important;
+    }
+    .ds-state-force-active {
+      transform: translateY(0) scale(0.98) !important;
+      box-shadow: 0 3px 10px -4px rgba(106, 221, 107, 0.4) !important;
+    }
+    .ds-input-force-focus {
+      border-color: hsl(var(--green-700)) !important;
+      background: #FDFBF4 !important;
+      transform: translateY(-1px);
+      box-shadow: 0 0 0 4px hsl(var(--green-100)) !important;
+    }
+    .ds-card-force-hover {
+      transform: translateY(-3px) !important;
+      border-color: var(--card-hover-border, #B4D4FA) !important;
+      box-shadow: 0 4px 14px -6px #14141414, 0 14px 30px -14px #1414141a !important;
+    }
+    .ds-card-force-hover .program-card__cta {
+      background: var(--cta-hover-bg, #DBEAFD) !important;
+      border-color: var(--cta-hover-border, #A9CDF6) !important;
+      transform: translateY(-1px) !important;
+    }
+    .ds-grid-bg {
+      background-size: 24px 24px;
+      background-image: 
+        linear-gradient(to right, hsl(var(--ink) / 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, hsl(var(--ink) / 0.04) 1px, transparent 1px);
+    }
+    @keyframes ds-chat-in {
+      0% { opacity: 0; transform: translateY(10px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .animate-ds-chat {
+      animation: ds-chat-in 0.35s var(--ease) both;
+    }
+  </style>
+</head>
+<body class="bg-background text-foreground selection:bg-[hsl(var(--green-200))] selection:text-[hsl(var(--ink))]">
+  <div id="root">
+    <!-- Toast Notification Container -->
+    <div id="ds-toast-container" aria-live="polite" class="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+
+    <div class="flex min-h-dvh flex-col bg-background">
+      <a href="#main-content" class="skip-to-content">Ir para o conteúdo principal</a>
+
+      <!-- Sticky Top Header (Mirrors Production Navbar + Design System Jump Links) -->
+      <header class="sticky top-0 z-40 w-full border-b border-border/60 backdrop-blur-md transition-colors duration-300" style="background-color: var(--page-blend, hsl(var(--card) / 0.85));">
+        <div class="mx-auto flex max-w-[1300px] items-center justify-between px-6 py-3.5">
+          <div class="flex items-center gap-4">
+            <a aria-label="Ada Tech — Design System" class="inline-flex shrink-0 items-center gap-3" href="#hero">
+              <img src="site/ada.tech/assets/ada-marca-topo-Dpmqhtlv.png" alt="Ada Tech" width="348" height="215" class="h-9 w-auto object-contain sm:h-10" style="aspect-ratio: 348 / 215;">
+            </a>
+            <span class="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--green-200))] bg-[hsl(var(--green-100))] px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">
+              <span class="h-1.5 w-1.5 rounded-full bg-[hsl(var(--green-500))]"></span>
+              Bloom UI · v2.3.0
+            </span>
+          </div>
+
+          <nav class="hidden items-center gap-1 lg:flex" aria-label="Navegação do Design System">
+            <a class="ds-nav-link text-xs font-semibold tracking-tight transition-ada rounded-full px-3 py-1.5 bg-[hsl(var(--ink))]/5 text-foreground" href="#hero">Visão Geral</a>
+            <a class="ds-nav-link text-xs font-semibold tracking-tight transition-ada rounded-full px-3 py-1.5 text-[hsl(var(--ink-2))] hover:text-foreground" href="#typography">01. Tipografia</a>
+            <a class="ds-nav-link text-xs font-semibold tracking-tight transition-ada rounded-full px-3 py-1.5 text-[hsl(var(--ink-2))] hover:text-foreground" href="#colors">02. Cores &amp; Superfícies</a>
+            <a class="ds-nav-link text-xs font-semibold tracking-tight transition-ada rounded-full px-3 py-1.5 text-[hsl(var(--ink-2))] hover:text-foreground" href="#components">03. Componentes</a>
+            <a class="ds-nav-link text-xs font-semibold tracking-tight transition-ada rounded-full px-3 py-1.5 text-[hsl(var(--ink-2))] hover:text-foreground" href="#layout">04. Layout &amp; Padrões</a>
+            <a class="ds-nav-link text-xs font-semibold tracking-tight transition-ada rounded-full px-3 py-1.5 text-[hsl(var(--ink-2))] hover:text-foreground" href="#motion">05. Ícones &amp; Motion</a>
+            <div class="ml-3 flex items-center gap-2.5">
+              <a class="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 bg-card/80 px-3.5 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-foreground transition-ada hover:border-foreground/30 hover:bg-card" href="index.html">
+                <i class="ph ph-arrow-left" aria-hidden="true"></i>Site Principal
+              </a>
+              <button type="button" id="copy-all-tokens-btn" class="btn-bloom" style="padding: 10px 18px; font-size: 13px;">
+                <i class="ph ph-copy" aria-hidden="true"></i>Copiar CSS :root
+              </button>
+            </div>
+          </nav>
+
+          <div class="flex items-center gap-2 lg:hidden">
+            <button type="button" id="mobile-menu-toggle" aria-label="Abrir navegação" aria-expanded="false" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground transition-ada hover:bg-[hsl(var(--cream-1))]">
+              <i class="ph ph-list text-lg" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mobile Drawer Navigation -->
+        <div id="mobile-nav-drawer" class="hidden border-t border-border/60 bg-card/95 px-6 py-4 backdrop-blur-md lg:hidden">
+          <div class="flex flex-col gap-1.5">
+            <a class="rounded-xl px-3 py-2 text-sm font-semibold text-foreground hover:bg-[hsl(var(--cream-1))]" href="#hero">00. Visão Geral &amp; Hero</a>
+            <a class="rounded-xl px-3 py-2 text-sm font-semibold text-foreground hover:bg-[hsl(var(--cream-1))]" href="#typography">01. Tipografia &amp; Escala</a>
+            <a class="rounded-xl px-3 py-2 text-sm font-semibold text-foreground hover:bg-[hsl(var(--cream-1))]" href="#colors">02. Cores, Superfícies &amp; Gradientes</a>
+            <a class="rounded-xl px-3 py-2 text-sm font-semibold text-foreground hover:bg-[hsl(var(--cream-1))]" href="#components">03. Componentes UI &amp; Estados</a>
+            <a class="rounded-xl px-3 py-2 text-sm font-semibold text-foreground hover:bg-[hsl(var(--cream-1))]" href="#layout">04. Layout, Grid &amp; Padrões</a>
+            <a class="rounded-xl px-3 py-2 text-sm font-semibold text-foreground hover:bg-[hsl(var(--cream-1))]" href="#motion">05. Ícones, Ilustrações &amp; Motion</a>
+            <div class="mt-2 flex flex-wrap gap-2 pt-2 border-t border-border/50">
+              <a class="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 bg-card px-4 py-2 text-xs font-bold text-foreground" href="index.html">
+                <i class="ph ph-arrow-left"></i>Voltar ao index.html
+              </a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main id="main-content" tabindex="-1" class="flex-1 focus:outline-none">
+        
+        <!-- =====================================================================
+             SECTION 00: HERO (EXACT CLONE OF PRODUCTION HERO, TEXT ADAPTED)
+             ===================================================================== -->
+        <section id="hero" class="ds-section-anchor relative overflow-hidden" style="background: linear-gradient(120deg, hsl(var(--green-100)) 0%, hsl(var(--cream)) 45%, hsl(var(--cream)) 100%);">
+          <div class="bloom-orb animate-float" aria-hidden="true" style="width: 520px; height: 520px; top: -180px; left: -180px; background: radial-gradient(circle, hsl(var(--green-200)), transparent 70%); opacity: 0.22; filter: blur(40px);"></div>
+          <div class="bloom-orb" aria-hidden="true" style="width: 280px; height: 280px; bottom: -100px; left: 40px; background: radial-gradient(circle, rgb(251, 230, 154), transparent 70%); opacity: 0.18; filter: blur(30px);"></div>
+          <div class="relative mx-auto flex max-w-[1300px] flex-col items-stretch gap-10 px-6 py-16 lg:flex-row lg:items-center lg:gap-12 lg:py-24 animate-ada-fade-up" style="opacity: 1; transform: translateY(0px);">
+            <div class="order-2 w-full text-left lg:order-1 lg:flex-1">
+              <h1 class="font-title text-3xl tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-[52px] leading-[1.08] whitespace-pre-line"><span class="font-extrabold">Design System Ada.</span> <span class="font-normal">Como construímos interfaces, padrões e experiências</span> <span class="serif-em bg-gradient-to-br from-[hsl(var(--green-700))] to-[hsl(var(--green-500))] bg-clip-text text-transparent">também</span>.</h1>
+              <p class="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">Um sistema vivo de componentes, tokens e padrões para revelar talento além do currículo.</p>
+              <div class="mt-10 flex flex-wrap items-center gap-3">
+                <a class="btn-bloom" href="#components" style="padding: 16px 28px; font-size: 15px;"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i>Explorar componentes<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right h-5 w-5"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                <a class="inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-card/80 px-7 py-4 font-title text-[15px] font-bold text-foreground backdrop-blur transition-all hover:-translate-y-0.5 hover:border-foreground/30 hover:bg-card" href="#colors"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user h-4 w-4"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>Ver tokens e cores</a>
+              </div>
+            </div>
+            <div class="order-1 mx-auto w-full max-w-full md:max-w-[600px] lg:order-2 lg:mx-0 lg:flex-1 lg:max-w-[560px] lg:self-end">
+              <img src="site/ada.tech/__l5e/assets-v1/f9bd65a3-b4b2-4786-8bff-6c79f49188dd/hero-3.png" alt="Mapa de skills com fotos de talentos" class="aspect-[4/3] md:aspect-[16/10] lg:aspect-[4/3] w-full max-w-full rounded-2xl object-cover">
+            </div>
+          </div>
+        </section>
+
+        <!-- Trust Pill Strip (Directly from index.html) -->
+        <div class="border-y border-border/60 bg-card/70">
+          <div class="mx-auto flex max-w-[1300px] flex-wrap items-center justify-center gap-2.5 px-6 py-4 font-sans text-sm text-muted-foreground">
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--green-200))] bg-[hsl(var(--green-100))] px-4 py-1.5 text-sm text-foreground/80"><i class="ph ph-shield-check text-[hsl(var(--green-700))]" aria-hidden="true"></i>Conformidade LGPD</span>
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--green-200))] bg-[hsl(var(--green-100))] px-4 py-1.5 text-sm text-foreground/80"><i class="ph ph-lock-key text-[hsl(var(--green-700))]" aria-hidden="true"></i>Dados criptografados em trânsito e em repouso</span>
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--green-200))] bg-[hsl(var(--green-100))] px-4 py-1.5 text-sm text-foreground/80"><i class="ph ph-users-three text-[hsl(var(--green-700))]" aria-hidden="true"></i>Alcance de +9MM perfis</span>
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--green-200))] bg-[hsl(var(--green-100))] px-4 py-1.5 text-sm text-foreground/80"><i class="ph ph-clipboard-text text-[hsl(var(--green-700))]" aria-hidden="true"></i>Auditorias internas semestrais</span>
+          </div>
+        </div>
+
+        <!-- =====================================================================
+             SECTION 01: TYPOGRAPHY & EDITORIAL HIERARCHY
+             ===================================================================== -->
+        <section id="typography" class="ds-section-anchor py-16 md:py-24">
+          <div class="mx-auto max-w-[1300px] px-6">
+            <div class="mb-12 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-white px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[2px] text-foreground shadow-sm">
+                  <span class="h-2 w-2 rounded-full bg-[hsl(var(--green-500))]"></span>
+                  01 · TIPOGRAFIA &amp; ESCALA
+                </div>
+                <h2 class="font-title text-4xl font-extrabold tracking-[-0.03em] leading-[1.05] text-foreground md:text-5xl">
+                  Voz técnica com <span class="serif-em bg-gradient-to-br from-[hsl(var(--green-700))] to-[hsl(var(--green-500))] bg-clip-text text-transparent">ênfase humana</span>.
+                </h2>
+              </div>
+              <p class="max-w-md text-sm text-muted-foreground md:text-base">
+                O sistema tipográfico combina a clareza geométrica da <strong>Manrope</strong> (`ss01`, `cv11`), o contraponto editorial em itálico da <strong>Fraunces</strong> (`.serif-em`) e a precisão técnica da <strong>JetBrains Mono</strong>.
+              </p>
+            </div>
+
+            <!-- 3 Font Family Cards -->
+            <div class="mb-12 grid gap-6 md:grid-cols-3">
+              <!-- Manrope -->
+              <div class="rounded-ada-lg border border-border/60 bg-card p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between">
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--green-100))] px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">--font-sans / .font-title</span>
+                    <span class="font-mono text-xs text-muted-foreground">400–800</span>
+                  </div>
+                  <div class="mt-5 font-title text-5xl font-extrabold tracking-[-0.03em] text-foreground">Aa Bb Cc</div>
+                  <h3 class="mt-3 font-title text-xl font-bold text-foreground">Manrope</h3>
+                  <p class="mt-1 text-sm text-muted-foreground">Sans-serif principal para títulos, corpo de texto e controles de interface. Usa `font-feature-settings: "ss01", "cv11"`.</p>
+                </div>
+                <div class="mt-6 border-t border-border/40 pt-4 flex flex-wrap gap-2 font-sans text-xs">
+                  <span class="rounded-md bg-background px-2 py-1 font-normal">400 Regular</span>
+                  <span class="rounded-md bg-background px-2 py-1 font-medium">500 Medium</span>
+                  <span class="rounded-md bg-background px-2 py-1 font-semibold">600 SemiBold</span>
+                  <span class="rounded-md bg-background px-2 py-1 font-bold">700 Bold</span>
+                  <span class="rounded-md bg-background px-2 py-1 font-extrabold">800 ExtraBold</span>
+                </div>
+              </div>
+
+              <!-- Fraunces -->
+              <div class="rounded-ada-lg border border-border/60 bg-card p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between">
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--green-100))] px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">--font-serif / .serif-em</span>
+                    <span class="font-mono text-xs text-muted-foreground">Italic 600–700</span>
+                  </div>
+                  <div class="mt-5 serif-em text-5xl bg-gradient-to-br from-[hsl(var(--green-700))] to-[hsl(var(--green-500))] bg-clip-text text-transparent">Aa Bb Cc</div>
+                  <h3 class="mt-3 font-title text-xl font-bold text-foreground">Fraunces Italic</h3>
+                  <p class="mt-1 text-sm text-muted-foreground">Serifada expressiva usada exclusivamente em palavras-chave de destaque nos títulos principais, muitas vezes com gradiente verde.</p>
+                </div>
+                <div class="mt-6 border-t border-border/40 pt-4 flex flex-wrap gap-2 text-xs">
+                  <span class="rounded-md bg-background px-2.5 py-1 serif-em text-foreground">600 SemiBold Italic</span>
+                  <span class="rounded-md bg-background px-2.5 py-1 serif-em font-bold text-[hsl(var(--green-700))]">700 Bold Italic</span>
+                </div>
+              </div>
+
+              <!-- JetBrains Mono -->
+              <div class="rounded-ada-lg border border-border/60 bg-card p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between">
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--green-100))] px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">--font-mono / .font-mono</span>
+                    <span class="font-mono text-xs text-muted-foreground">400–700</span>
+                  </div>
+                  <div class="mt-5 font-mono text-5xl font-bold tracking-tight text-foreground">01_Aa</div>
+                  <h3 class="mt-3 font-title text-xl font-bold text-foreground">JetBrains Mono</h3>
+                  <p class="mt-1 text-sm text-muted-foreground">Monoespaçada para eyebrows, metadados do Skill Map, contadores tabulares (`1–4`, `2/4`), tags de seção e códigos.</p>
+                </div>
+                <div class="mt-6 border-t border-border/40 pt-4 flex flex-wrap gap-2 font-mono text-xs">
+                  <span class="rounded-md bg-background px-2 py-1 font-normal">400 Regular</span>
+                  <span class="rounded-md bg-background px-2 py-1 font-medium">500 Medium</span>
+                  <span class="rounded-md bg-background px-2 py-1 font-bold uppercase tracking-[1.5px]">700 CAPS</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Type Scale Spec Table (Canonical Order: Heading 1..4, Bold L/M/S, Paragraph, Regular L/M/S) -->
+            <div class="overflow-hidden rounded-ada-xl border border-border/60 bg-card shadow-sm">
+              <div class="border-b border-border/60 bg-background/60 px-6 py-4 flex flex-wrap items-center justify-between gap-2">
+                <div class="font-title text-sm font-extrabold text-foreground">Especificação de Estilos Tipográficos</div>
+                <div class="font-mono text-[11px] uppercase tracking-[1.5px] text-muted-foreground">Tamanho / Altura de Linha (px)</div>
+              </div>
+
+              <div class="divide-y divide-border/50">
+                <!-- Heading 1 -->
+                <div class="grid gap-4 p-6 lg:grid-cols-[200px_1fr_140px] lg:items-center">
+                  <div>
+                    <div class="font-mono text-xs font-bold text-[hsl(var(--green-700))]">Heading 1</div>
+                    <div class="font-mono text-[10px] text-muted-foreground">h1.font-title.lg:text-[52px]</div>
+                  </div>
+                  <div>
+                    <h1 class="font-title text-3xl tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-[52px] leading-[1.08]"><span class="font-extrabold">Skills mudaram.</span> <span class="font-normal">Como você descobre, desenvolve e contrata</span> <span class="serif-em bg-gradient-to-br from-[hsl(var(--green-700))] to-[hsl(var(--green-500))] bg-clip-text text-transparent">também</span>.</h1>
+                  </div>
+                  <div class="text-right font-mono text-xs font-bold tabular-nums text-muted-foreground">52px / 56px</div>
+                </div>
+
+                <!-- Heading 2 -->
+                <div class="grid gap-4 p-6 lg:grid-cols-[200px_1fr_140px] lg:items-center">
+                  <div>
+                    <div class="font-mono text-xs font-bold text-[hsl(var(--green-700))]">Heading 2</div>
+                    <div class="font-mono text-[10px] text-muted-foreground">h2.font-title.md:text-5xl</div>
+                  </div>
+                  <div>
+                    <h2 class="font-title text-4xl font-extrabold tracking-[-0.03em] leading-[1.05] text-foreground md:text-5xl">Seis caminhos. <span class="serif-em bg-gradient-to-br from-[hsl(var(--green-700))] to-[hsl(var(--green-500))] bg-clip-text text-transparent">Um</span> Skill Map.</h2>
+                  </div>
+                  <div class="text-right font-mono text-xs font-bold tabular-nums text-muted-foreground">48px / 50px</div>
+                </div>
+
+                <!-- Heading 3 -->
+                <div class="grid gap-4 p-6 lg:grid-cols-[200px_1fr_140px] lg:items-center">
+                  <div>
+                    <div class="font-mono text-xs font-bold text-[hsl(var(--green-700))]">Heading 3</div>
+                    <div class="font-mono text-[10px] text-muted-foreground">h3.program-card__title.text-[26px]</div>
+                  </div>
+                  <div>
+                    <h3 class="program-card__title text-[26px] font-bold leading-[1.16] tracking-[-0.03em] text-foreground">Contrate com Inteligência Artificial</h3>
+                  </div>
+                  <div class="text-right font-mono text-xs font-bold tabular-nums text-muted-foreground">26px / 30px</div>
+                </div>
+
+                <!-- Heading 4 -->
+                <div class="grid gap-4 p-6 lg:grid-cols-[200px_1fr_140px] lg:items-center">
+                  <div>
+                    <div class="font-mono text-xs font-bold text-[hsl(var(--green-700))]">Heading 4</div>
+                    <div class="font-mono text-[10px] text-muted-foreground">h4.text-xs.font-bold.uppercase</div>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-foreground">SOLUÇÕES B2B</h4>
+                  </div>
+                  <div class="text-right font-mono text-xs font-bold tabular-nums text-muted-foreground">12px / 16px</div>
+                </div>
+
+                <!-- Bold L -->
+                <div class="grid gap-4 p-6 lg:grid-cols-[200px_1fr_140px] lg:items-center">
+                  <div>
+                    <div class="font-mono text-xs font-bold text-[hsl(var(--green-700))]">Bold L</div>
+                    <div class="font-mono text-[10px] text-muted-foreground">font-title.text-[15px].font-bold</div>
+                  </div>
+                  <div>
+                    <span class="font-title text-[15px] font-bold text-foreground">Falar com especialista · Sou talento</span>
+                  </div>
+                  <div class="text-right font-mono text-xs font-bold tabular-nums text-muted-foreground">15px / 22px</div>
+                </div>
+
+                <!-- Bold M -->
+                <div class="grid gap-4 p-6 lg:grid-cols-[200px_1fr_140px] lg:items-center">
+                  <div>
+                    <div class="font-mono text-xs font-bold text-[hsl(var(--green-700))]">Bold M</div>
+                    <div class="font-mono text-[10px] text-muted-foreground">font-title.text-sm.font-extrabold</div>
+                  </div>
+                  <div>
+                    <div class="font-title text-sm font-extrabold tracking-tight text-foreground">Skill Map · Felipe</div>
+                  </div>
+                  <div class="text-right font-mono text-xs font-bold tabular-nums text-muted-foreground">14px / 20px</div>
+                </div>
+
+                <!-- Bold S -->
+                <div class="grid gap-4 p-6 lg:grid-cols-[200px_1fr_140px] lg:items-center">
+                  <div>
+                    <div class="font-mono text-xs font-bold text-[hsl(var(--green-700))]">Bold S</div>
+                    <div class="font-mono text-[10px] text-muted-foreground">font-mono.text-[10px].font-bold.uppercase</div>
+                  </div>
+                  <div>
+                    <div class="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-white px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[2px] text-foreground shadow-sm"><span class="h-2 w-2 rounded-full bg-[hsl(var(--green-500))]"></span>ADA SKILLS · A PLATAFORMA</div>
+                  </div>
+                  <div class="text-right font-mono text-xs font-bold tabular-nums text-muted-foreground">10px / 14px</div>
+                </div>
+
+                <!-- Paragraph (larger body) -->
+                <div class="grid gap-4 p-6 lg:grid-cols-[200px_1fr_140px] lg:items-center">
+                  <div>
+                    <div class="font-mono text-xs font-bold text-[hsl(var(--green-700))]">Paragraph (Lead)</div>
+                    <div class="font-mono text-[10px] text-muted-foreground">p.text-lg.md:text-xl.text-muted-foreground</div>
+                  </div>
+                  <div>
+                    <p class="text-lg text-muted-foreground md:text-xl">Uma plataforma para revelar talento além do currículo.</p>
+                  </div>
+                  <div class="text-right font-mono text-xs font-bold tabular-nums text-muted-foreground">20px / 28px</div>
+                </div>
+
+                <!-- Regular L -->
+                <div class="grid gap-4 p-6 lg:grid-cols-[200px_1fr_140px] lg:items-center">
+                  <div>
+                    <div class="font-mono text-xs font-bold text-[hsl(var(--green-700))]">Regular L</div>
+                    <div class="font-mono text-[10px] text-muted-foreground">p.text-sm.md:text-base.text-muted-foreground</div>
+                  </div>
+                  <div>
+                    <p class="text-sm text-muted-foreground md:text-base">Cada habilidade é validada pela Ada Sinais: evidências reais de habilidades coletados pelos nossos métodos avaliativos.</p>
+                  </div>
+                  <div class="text-right font-mono text-xs font-bold tabular-nums text-muted-foreground">16px / 24px</div>
+                </div>
+
+                <!-- Regular M -->
+                <div class="grid gap-4 p-6 lg:grid-cols-[200px_1fr_140px] lg:items-center">
+                  <div>
+                    <div class="font-mono text-xs font-bold text-[hsl(var(--green-700))]">Regular M</div>
+                    <div class="font-mono text-[10px] text-muted-foreground">p.text-[15px].leading-[1.55]</div>
+                  </div>
+                  <div>
+                    <p class="text-[15px] leading-[1.55] text-muted-foreground">Contratar talentos avaliando habilidades reais com velocidade e diversidade.</p>
+                  </div>
+                  <div class="text-right font-mono text-xs font-bold tabular-nums text-muted-foreground">15px / 23px</div>
+                </div>
+
+                <!-- Regular S -->
+                <div class="grid gap-4 p-6 lg:grid-cols-[200px_1fr_140px] lg:items-center">
+                  <div>
+                    <div class="font-mono text-xs font-bold text-[hsl(var(--green-700))]">Regular S</div>
+                    <div class="font-mono text-[10px] text-muted-foreground">span.text-sm.text-foreground/80</div>
+                  </div>
+                  <div>
+                    <span class="text-sm text-foreground/80">Dados criptografados em trânsito e em repouso</span>
+                  </div>
+                  <div class="text-right font-mono text-xs font-bold tabular-nums text-muted-foreground">14px / 20px</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- =====================================================================
+             SECTION 02: COLORS, SURFACES & GRADIENTS
+             ===================================================================== -->
+        <section id="colors" class="ds-section-anchor relative py-16 section-soft md:py-24">
+          <div class="mx-auto max-w-[1300px] px-6">
+            <div class="mb-12 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-white px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[2px] text-foreground shadow-sm">
+                  <span class="h-2 w-2 rounded-full bg-[hsl(var(--green-500))]"></span>
+                  02 · CORES, SUPERFÍCIES &amp; GRADIENTES
+                </div>
+                <h2 class="font-title text-4xl font-extrabold tracking-[-0.03em] leading-[1.05] text-foreground md:text-5xl">
+                  Calor editorial em <span class="serif-em bg-gradient-to-br from-[hsl(var(--green-700))] to-[hsl(var(--green-500))] bg-clip-text text-transparent">Cream &amp; Green</span>.
+                </h2>
+              </div>
+              <p class="max-w-md text-sm text-muted-foreground md:text-base">
+                Clique em qualquer amostra para copiar o valor hexadecimal ou variável CSS. Todas as cores vêm de `:root` em `index-CBBxypCd.css`.
+              </p>
+            </div>
+
+            <!-- Palette Group 1: Cream & Surfaces -->
+            <div class="mb-10">
+              <div class="mb-4 flex items-center justify-between">
+                <h3 class="font-title text-lg font-extrabold text-foreground">Fundos &amp; Superfícies (Cream Scale)</h3>
+                <span class="font-mono text-[11px] uppercase tracking-[1.5px] text-muted-foreground">--cream · --background · --card · --border</span>
+              </div>
+              <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <button type="button" data-copy="#FDFBF4" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-20 w-full rounded-xl border border-border/60" style="background: hsl(var(--cream));"></div>
+                  <div class="mt-3 flex items-center justify-between">
+                    <span class="font-title text-sm font-bold text-foreground">Cream (Base / Card)</span>
+                    <span class="font-mono text-[11px] font-bold text-[hsl(var(--green-700))]">#FDFBF4</span>
+                  </div>
+                  <div class="mt-1 font-mono text-[10px] text-muted-foreground">--cream: 48 60% 97%</div>
+                </button>
+                <button type="button" data-copy="#F5F1E6" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-20 w-full rounded-xl border border-border/60" style="background: hsl(var(--cream-1));"></div>
+                  <div class="mt-3 flex items-center justify-between">
+                    <span class="font-title text-sm font-bold text-foreground">Cream 1 (Soft Surface)</span>
+                    <span class="font-mono text-[11px] font-bold text-[hsl(var(--green-700))]">#F5F1E6</span>
+                  </div>
+                  <div class="mt-1 font-mono text-[10px] text-muted-foreground">--cream-1: 45 47% 93%</div>
+                </button>
+                <button type="button" data-copy="#EDE8DA" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-20 w-full rounded-xl border border-border/60" style="background: hsl(var(--cream-2));"></div>
+                  <div class="mt-3 flex items-center justify-between">
+                    <span class="font-title text-sm font-bold text-foreground">Cream 2 (Muted / Bloco)</span>
+                    <span class="font-mono text-[11px] font-bold text-[hsl(var(--green-700))]">#EDE8DA</span>
+                  </div>
+                  <div class="mt-1 font-mono text-[10px] text-muted-foreground">--cream-2: 44 33% 89%</div>
+                </button>
+                <button type="button" data-copy="#E4DECF" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-20 w-full rounded-xl border border-border/60" style="background: hsl(var(--cream-3));"></div>
+                  <div class="mt-3 flex items-center justify-between">
+                    <span class="font-title text-sm font-bold text-foreground">Cream 3 (Border / Grid)</span>
+                    <span class="font-mono text-[11px] font-bold text-[hsl(var(--green-700))]">#E4DECF</span>
+                  </div>
+                  <div class="mt-1 font-mono text-[10px] text-muted-foreground">--cream-3 / --border: 43 30% 85%</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Palette Group 2: Ink Scale -->
+            <div class="mb-10">
+              <div class="mb-4 flex items-center justify-between">
+                <h3 class="font-title text-lg font-extrabold text-foreground">Tipografia &amp; Contraste (Ink Scale)</h3>
+                <span class="font-mono text-[11px] uppercase tracking-[1.5px] text-muted-foreground">--ink · --foreground · --muted-foreground</span>
+              </div>
+              <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                <button type="button" data-copy="#141414" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-20 w-full rounded-xl" style="background: hsl(var(--ink));"></div>
+                  <div class="mt-3 flex items-center justify-between">
+                    <span class="font-title text-sm font-bold text-foreground">Ink (Foreground)</span>
+                    <span class="font-mono text-[11px] font-bold text-[hsl(var(--green-700))]">#141414</span>
+                  </div>
+                  <div class="mt-1 font-mono text-[10px] text-muted-foreground">--ink: 0 0% 8%</div>
+                </button>
+                <button type="button" data-copy="#2B2B27" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-20 w-full rounded-xl" style="background: hsl(var(--ink-1));"></div>
+                  <div class="mt-3 flex items-center justify-between">
+                    <span class="font-title text-sm font-bold text-foreground">Ink 1 (Dark Surface)</span>
+                    <span class="font-mono text-[11px] font-bold text-[hsl(var(--green-700))]">#2B2B27</span>
+                  </div>
+                  <div class="mt-1 font-mono text-[10px] text-muted-foreground">--ink-1: 48 6% 16%</div>
+                </button>
+                <button type="button" data-copy="#54534A" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-20 w-full rounded-xl" style="background: hsl(var(--ink-2));"></div>
+                  <div class="mt-3 flex items-center justify-between">
+                    <span class="font-title text-sm font-bold text-foreground">Ink 2 (Body Muted)</span>
+                    <span class="font-mono text-[11px] font-bold text-[hsl(var(--green-700))]">#54534A</span>
+                  </div>
+                  <div class="mt-1 font-mono text-[10px] text-muted-foreground">--ink-2: 50 7% 31%</div>
+                </button>
+                <button type="button" data-copy="#6C6A60" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-20 w-full rounded-xl" style="background: hsl(var(--ink-3));"></div>
+                  <div class="mt-3 flex items-center justify-between">
+                    <span class="font-title text-sm font-bold text-foreground">Ink 3 (Captions)</span>
+                    <span class="font-mono text-[11px] font-bold text-[hsl(var(--green-700))]">#6C6A60</span>
+                  </div>
+                  <div class="mt-1 font-mono text-[10px] text-muted-foreground">--ink-3: 48 6% 40%</div>
+                </button>
+                <button type="button" data-copy="#C8C4B5" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-20 w-full rounded-xl border border-border/60" style="background: hsl(var(--ink-4));"></div>
+                  <div class="mt-3 flex items-center justify-between">
+                    <span class="font-title text-sm font-bold text-foreground">Ink 4 (Subtle Rule)</span>
+                    <span class="font-mono text-[11px] font-bold text-[hsl(var(--green-700))]">#C8C4B5</span>
+                  </div>
+                  <div class="mt-1 font-mono text-[10px] text-muted-foreground">--ink-4: 47 17% 75%</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Palette Group 3: Ada Green Scale -->
+            <div class="mb-10">
+              <div class="mb-4 flex items-center justify-between">
+                <h3 class="font-title text-lg font-extrabold text-foreground">Cor Primária &amp; Marca (Ada Green Scale)</h3>
+                <span class="font-mono text-[11px] uppercase tracking-[1.5px] text-muted-foreground">--green-50 .. --green-700</span>
+              </div>
+              <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
+                <button type="button" data-copy="#F1FCEF" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-16 w-full rounded-xl border border-[hsl(var(--green-200))]" style="background: hsl(var(--green-50));"></div>
+                  <div class="mt-2.5 font-title text-xs font-bold text-foreground">Green 50</div>
+                  <div class="font-mono text-[10px] font-bold text-[hsl(var(--green-700))]">#F1FCEF</div>
+                  <div class="font-mono text-[9px] text-muted-foreground">--green-50</div>
+                </button>
+                <button type="button" data-copy="#DCF9D6" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-16 w-full rounded-xl border border-[hsl(var(--green-200))]" style="background: hsl(var(--green-100));"></div>
+                  <div class="mt-2.5 font-title text-xs font-bold text-foreground">Green 100</div>
+                  <div class="font-mono text-[10px] font-bold text-[hsl(var(--green-700))]">#DCF9D6</div>
+                  <div class="font-mono text-[9px] text-muted-foreground">--green-100</div>
+                </button>
+                <button type="button" data-copy="#B3F2A9" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-16 w-full rounded-xl" style="background: hsl(var(--green-200));"></div>
+                  <div class="mt-2.5 font-title text-xs font-bold text-foreground">Green 200</div>
+                  <div class="font-mono text-[10px] font-bold text-[hsl(var(--green-700))]">#B3F2A9</div>
+                  <div class="font-mono text-[9px] text-muted-foreground">--green-200</div>
+                </button>
+                <button type="button" data-copy="#5BE066" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-16 w-full rounded-xl" style="background: hsl(var(--green-400));"></div>
+                  <div class="mt-2.5 font-title text-xs font-bold text-foreground">Green 400 (CTA)</div>
+                  <div class="font-mono text-[10px] font-bold text-[hsl(var(--green-700))]">#5BE066</div>
+                  <div class="font-mono text-[9px] text-muted-foreground">--green-400</div>
+                </button>
+                <button type="button" data-copy="#29C947" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-16 w-full rounded-xl" style="background: hsl(var(--green-500));"></div>
+                  <div class="mt-2.5 font-title text-xs font-bold text-foreground">Green 500 (Hover)</div>
+                  <div class="font-mono text-[10px] font-bold text-[hsl(var(--green-700))]">#29C947</div>
+                  <div class="font-mono text-[9px] text-muted-foreground">--green-500</div>
+                </button>
+                <button type="button" data-copy="#0F9D29" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-16 w-full rounded-xl" style="background: hsl(var(--green-600));"></div>
+                  <div class="mt-2.5 font-title text-xs font-bold text-foreground">Green 600</div>
+                  <div class="font-mono text-[10px] font-bold text-[hsl(var(--green-700))]">#0F9D29</div>
+                  <div class="font-mono text-[9px] text-muted-foreground">--green-600</div>
+                </button>
+                <button type="button" data-copy="#0A6E1D" class="ds-swatch-card text-left rounded-2xl border border-border/60 bg-card p-3">
+                  <div class="h-16 w-full rounded-xl" style="background: hsl(var(--green-700));"></div>
+                  <div class="mt-2.5 font-title text-xs font-bold text-foreground">Green 700 (Deep)</div>
+                  <div class="font-mono text-[10px] font-bold text-[hsl(var(--green-700))]">#0A6E1D</div>
+                  <div class="font-mono text-[9px] text-muted-foreground">--green-700</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Palette Group 4: Program Category Accents (Contratar / Desenvolver / Mapear) -->
+            <div class="mb-12">
+              <div class="mb-4 flex items-center justify-between">
+                <h3 class="font-title text-lg font-extrabold text-foreground">Cores Semânticas por Linha de Programa</h3>
+                <span class="font-mono text-[11px] uppercase tracking-[1.5px] text-muted-foreground">Contratar (Blue) · Desenvolver (Green) · Mapear (Amber)</span>
+              </div>
+              <div class="grid gap-4 md:grid-cols-3">
+                <!-- Blue: para Contratar -->
+                <div class="rounded-2xl border p-5" style="background: rgb(237, 245, 254); border-color: rgb(201, 223, 250);">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold uppercase" style="letter-spacing: 0.14em; color: rgb(31, 85, 138);">para Contratar</span>
+                    <span class="font-mono text-[11px] font-bold" style="color: rgb(31, 85, 138);">#1F558A</span>
+                  </div>
+                  <p class="mt-2 text-xs" style="color: rgb(31, 85, 138);">Usado em tags, ícones, bordas de hover (`#B4D4FA`) e botões `.program-card__cta` dos programas de seleção e contratação.</p>
+                  <div class="mt-4 flex flex-wrap gap-2 font-mono text-[10px]">
+                    <span class="rounded-md bg-white/80 px-2 py-1" style="color: rgb(31, 85, 138);">BG: #EDF5FE</span>
+                    <span class="rounded-md bg-white/80 px-2 py-1" style="color: rgb(31, 85, 138);">Border: #C9DFFA</span>
+                    <span class="rounded-md bg-white/80 px-2 py-1" style="color: rgb(31, 85, 138);">Hover: #DBEAFD</span>
+                  </div>
+                </div>
+
+                <!-- Green: para Desenvolver -->
+                <div class="rounded-2xl border p-5" style="background: rgb(241, 252, 239); border-color: rgb(179, 242, 169);">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold uppercase" style="letter-spacing: 0.14em; color: rgb(10, 110, 29);">para Desenvolver</span>
+                    <span class="font-mono text-[11px] font-bold" style="color: rgb(10, 110, 29);">#0A6E1D</span>
+                  </div>
+                  <p class="mt-2 text-xs" style="color: rgb(10, 110, 29);">Usado em programas de onboarding, reskilling e formação contínua em IA (`--green-50`, `--green-200`, `--green-700`).</p>
+                  <div class="mt-4 flex flex-wrap gap-2 font-mono text-[10px]">
+                    <span class="rounded-md bg-white/80 px-2 py-1" style="color: rgb(10, 110, 29);">BG: #F1FCEF</span>
+                    <span class="rounded-md bg-white/80 px-2 py-1" style="color: rgb(10, 110, 29);">Border: #B3F2A9</span>
+                    <span class="rounded-md bg-white/80 px-2 py-1" style="color: rgb(10, 110, 29);">Hover: #DCF9D6</span>
+                  </div>
+                </div>
+
+                <!-- Amber: para Mapear -->
+                <div class="rounded-2xl border p-5" style="background: rgb(254, 248, 226); border-color: rgb(242, 222, 147);">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold uppercase" style="letter-spacing: 0.14em; color: rgb(107, 84, 0);">para Mapear</span>
+                    <span class="font-mono text-[11px] font-bold" style="color: rgb(107, 84, 0);">#6B5400</span>
+                  </div>
+                  <p class="mt-2 text-xs" style="color: rgb(107, 84, 0);">Usado em programas de diagnóstico de proficiência e mapeamento de competências (`#FEF8E2`, `#F2DE93`, `#F5C92A`).</p>
+                  <div class="mt-4 flex flex-wrap gap-2 font-mono text-[10px]">
+                    <span class="rounded-md bg-white/80 px-2 py-1" style="color: rgb(107, 84, 0);">BG: #FEF8E2</span>
+                    <span class="rounded-md bg-white/80 px-2 py-1" style="color: rgb(107, 84, 0);">Border: #F2DE93</span>
+                    <span class="rounded-md bg-white/80 px-2 py-1" style="color: rgb(107, 84, 0);">Hover: #FBE69A</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Gradients, Glass & Surface Overlays Showcase -->
+            <div>
+              <div class="mb-4 flex items-center justify-between">
+                <h3 class="font-title text-lg font-extrabold text-foreground">Gradientes, Bordas &amp; Superfícies em Contexto</h3>
+                <span class="font-mono text-[11px] uppercase tracking-[1.5px] text-muted-foreground">Exatamente como aplicados em index.html</span>
+              </div>
+              <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+                <!-- Gradient 1: Hero Surface -->
+                <div class="relative overflow-hidden rounded-ada-lg border border-border/60 p-5" style="background: linear-gradient(120deg, hsl(var(--green-100)) 0%, hsl(var(--cream)) 45%, hsl(var(--cream)) 100%);">
+                  <div class="font-mono text-[10px] font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">Hero Background</div>
+                  <div class="mt-2 font-title text-base font-extrabold text-foreground">Linear 120deg</div>
+                  <p class="mt-1 font-mono text-[11px] text-muted-foreground">green-100 (0%) → cream (45%..100%)</p>
+                </div>
+
+                <!-- Gradient 2: Serif Emphasis Text Gradient -->
+                <div class="rounded-ada-lg border border-border/60 bg-card p-5">
+                  <div class="font-mono text-[10px] font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">Gradient Text (.serif-em)</div>
+                  <div class="mt-2 serif-em text-2xl bg-gradient-to-br from-[hsl(var(--green-700))] to-[hsl(var(--green-500))] bg-clip-text text-transparent">Destaque Editorial</div>
+                  <p class="mt-1 font-mono text-[11px] text-muted-foreground">from-[hsl(var(--green-700))] to-[hsl(var(--green-500))]</p>
+                </div>
+
+                <!-- Gradient 3: AI Formation Banner -->
+                <div class="rounded-ada-lg border border-[hsl(var(--green-200))] p-5" style="background: linear-gradient(125deg, hsl(var(--green-100)) 0%, hsl(var(--cream)) 55%, hsl(var(--green-50)) 100%);">
+                  <div class="font-mono text-[10px] font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">Banner Formação IA</div>
+                  <div class="mt-2 font-title text-base font-extrabold text-foreground">Linear 125deg</div>
+                  <p class="mt-1 font-mono text-[11px] text-muted-foreground">green-100 → cream (55%) → green-50</p>
+                </div>
+
+                <!-- Gradient 4: Final CTA Card -->
+                <div class="rounded-ada-lg border border-[hsl(var(--green-200))] p-5" style="background: linear-gradient(135deg, hsl(var(--green-100)) 0%, hsl(var(--cream)) 60%, rgb(254, 248, 226) 100%);">
+                  <div class="font-mono text-[10px] font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">Card CTA Final</div>
+                  <div class="mt-2 font-title text-base font-extrabold text-foreground">Linear 135deg + Amber</div>
+                  <p class="mt-1 font-mono text-[11px] text-muted-foreground">green-100 → cream (60%) → #FEF8E2</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =====================================================================
+             SECTION 03: UI COMPONENTS & INTERACTIVE STATES
+             ===================================================================== -->
+        <section id="components" class="ds-section-anchor py-16 md:py-24">
+          <div class="mx-auto max-w-[1300px] px-6">
+            <div class="mb-12 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-white px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[2px] text-foreground shadow-sm">
+                  <span class="h-2 w-2 rounded-full bg-[hsl(var(--green-500))]"></span>
+                  03 · COMPONENTES UI &amp; ESTADOS
+                </div>
+                <h2 class="font-title text-4xl font-extrabold tracking-[-0.03em] leading-[1.05] text-foreground md:text-5xl">
+                  Componentes canônicos <span class="serif-em bg-gradient-to-br from-[hsl(var(--green-700))] to-[hsl(var(--green-500))] bg-clip-text text-transparent">em ação</span>.
+                </h2>
+              </div>
+              <p class="max-w-md text-sm text-muted-foreground md:text-base">
+                Todos os componentes abaixo reutilizam exatamente as classes e variáveis CSS de `index.html`, exibindo estados lado a lado (Default, Hover, Focus, Active e Disabled).
+              </p>
+            </div>
+
+            <!-- 3.1 Buttons & Interactive States Matrix -->
+            <div class="mb-16 overflow-hidden rounded-ada-xl border border-border/60 bg-card p-6 md:p-8 shadow-sm">
+              <div class="mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-4">
+                <div>
+                  <h3 class="font-title text-xl font-extrabold text-foreground">Botões &amp; Matriz de Estados</h3>
+                  <p class="text-xs text-muted-foreground">Classes originais: `.btn-bloom`, Secondary Pill Outline, `.program-card__cta` e botão de ícone.</p>
+                </div>
+                <span class="font-mono text-[11px] uppercase tracking-[1.5px] text-muted-foreground">Default · Hover · Focus · Active · Disabled</span>
+              </div>
+
+              <div class="space-y-8">
+                <!-- Primary Button (.btn-bloom) -->
+                <div>
+                  <div class="mb-3 font-mono text-xs font-bold text-[hsl(var(--green-700))]">1. Primary CTA (.btn-bloom)</div>
+                  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 items-center">
+                    <div class="flex flex-col items-start gap-2 rounded-2xl border border-border/50 bg-background/60 p-4">
+                      <span class="font-mono text-[10px] uppercase tracking-[1.5px] text-muted-foreground">Default</span>
+                      <button type="button" class="btn-bloom"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i>Solicitar proposta</button>
+                    </div>
+                    <div class="flex flex-col items-start gap-2 rounded-2xl border border-border/50 bg-background/60 p-4">
+                      <span class="font-mono text-[10px] uppercase tracking-[1.5px] text-muted-foreground">Hover (:hover)</span>
+                      <button type="button" class="btn-bloom ds-state-force-hover"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i>Solicitar proposta</button>
+                    </div>
+                    <div class="flex flex-col items-start gap-2 rounded-2xl border border-border/50 bg-background/60 p-4">
+                      <span class="font-mono text-[10px] uppercase tracking-[1.5px] text-muted-foreground">Focus (:focus-visible)</span>
+                      <button type="button" class="btn-bloom ds-state-force-focus"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i>Solicitar proposta</button>
+                    </div>
+                    <div class="flex flex-col items-start gap-2 rounded-2xl border border-border/50 bg-background/60 p-4">
+                      <span class="font-mono text-[10px] uppercase tracking-[1.5px] text-muted-foreground">Active (:active)</span>
+                      <button type="button" class="btn-bloom ds-state-force-active"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i>Solicitar proposta</button>
+                    </div>
+                    <div class="flex flex-col items-start gap-2 rounded-2xl border border-border/50 bg-background/60 p-4">
+                      <span class="font-mono text-[10px] uppercase tracking-[1.5px] text-muted-foreground">Disabled ([disabled])</span>
+                      <button type="button" disabled class="btn-bloom opacity-50 cursor-not-allowed pointer-events-none"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i>Indisponível</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Secondary Pill Outline Button -->
+                <div>
+                  <div class="mb-3 font-mono text-xs font-bold text-[hsl(var(--green-700))]">2. Secondary Pill Button (Hero / Banner Outline)</div>
+                  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 items-center">
+                    <div class="flex flex-col items-start gap-2 rounded-2xl border border-border/50 bg-background/60 p-4">
+                      <span class="font-mono text-[10px] uppercase tracking-[1.5px] text-muted-foreground">Default</span>
+                      <button type="button" class="inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-card/80 px-5 py-3 font-title text-sm font-bold text-foreground backdrop-blur transition-all">Sou talento</button>
+                    </div>
+                    <div class="flex flex-col items-start gap-2 rounded-2xl border border-border/50 bg-background/60 p-4">
+                      <span class="font-mono text-[10px] uppercase tracking-[1.5px] text-muted-foreground">Hover (:hover)</span>
+                      <button type="button" class="inline-flex items-center gap-2 rounded-full border border-foreground/30 bg-card px-5 py-3 font-title text-sm font-bold text-foreground -translate-y-0.5 shadow-sm">Sou talento</button>
+                    </div>
+                    <div class="flex flex-col items-start gap-2 rounded-2xl border border-border/50 bg-background/60 p-4">
+                      <span class="font-mono text-[10px] uppercase tracking-[1.5px] text-muted-foreground">Focus (:focus-visible)</span>
+                      <button type="button" class="inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-card px-5 py-3 font-title text-sm font-bold text-foreground ds-state-force-focus">Sou talento</button>
+                    </div>
+                    <div class="flex flex-col items-start gap-2 rounded-2xl border border-border/50 bg-background/60 p-4">
+                      <span class="font-mono text-[10px] uppercase tracking-[1.5px] text-muted-foreground">Active (:active)</span>
+                      <button type="button" class="inline-flex items-center gap-2 rounded-full border border-foreground/30 bg-[hsl(var(--cream-1))] px-5 py-3 font-title text-sm font-bold text-foreground scale-[0.98]">Sou talento</button>
+                    </div>
+                    <div class="flex flex-col items-start gap-2 rounded-2xl border border-border/50 bg-background/60 p-4">
+                      <span class="font-mono text-[10px] uppercase tracking-[1.5px] text-muted-foreground">Disabled</span>
+                      <button type="button" disabled class="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-5 py-3 font-title text-sm font-bold text-muted-foreground opacity-50 cursor-not-allowed">Sou talento</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Navigation & Utility Buttons -->
+                <div>
+                  <div class="mb-3 font-mono text-xs font-bold text-[hsl(var(--green-700))]">3. Navigation Pills, Seletor de Idioma &amp; Menu Mobile</div>
+                  <div class="flex flex-wrap items-center gap-4 rounded-2xl border border-border/50 bg-background/60 p-4">
+                    <a class="text-sm font-medium tracking-tight transition-ada rounded-full px-3 py-1.5 bg-[hsl(var(--ink))]/5 text-foreground" href="#components">Nav Active (Início)</a>
+                    <a class="text-sm font-medium tracking-tight transition-ada rounded-full px-3 py-1.5 text-[hsl(var(--ink-2))] hover:text-foreground" href="#components">Nav Default (Soluções)</a>
+                    <button type="button" class="inline-flex items-center gap-1.5 rounded-ada px-2.5 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-foreground transition-ada hover:bg-muted/30">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe h-3.5 w-3.5"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+                      <span>🇧🇷</span>
+                    </button>
+                    <button type="button" aria-label="Menu Mobile" class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-foreground transition-ada hover:bg-[hsl(var(--cream-1))]">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu h-5 w-5"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3.2 Interactive Skill Map Widget (3-Column Canonical Component) -->
+            <div class="mb-16">
+              <div class="mb-6 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 class="font-title text-2xl font-extrabold text-foreground">Componente Interativo: Skill Map (3 Colunas)</h3>
+                  <p class="text-sm text-muted-foreground">Clique em qualquer uma das 4 habilidades abaixo do gráfico radar para inspecionar os estados ativo/inativo e os sinais detectados.</p>
+                </div>
+                <span class="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-white px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[2px] text-foreground shadow-sm">
+                  <span class="h-2 w-2 rounded-full bg-[hsl(var(--green-500))]"></span>INTERATIVO · CLIQUE NAS SKILLS
+                </span>
+              </div>
+
+              <div class="grid min-w-0 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:items-start" style="--skillmap-card-height: 560px;">
+                <!-- Column 1: Conversa -->
+                <div class="min-w-0 rounded-ada-xl border border-[hsl(var(--ink)/0.08)] bg-white p-5 shadow-sm h-full flex flex-col max-h-[520px] lg:h-[var(--skillmap-card-height)] lg:max-h-[var(--skillmap-card-height)]">
+                  <div class="mb-3 flex min-w-0 items-center justify-between gap-3 border-b border-border/40 pb-3">
+                    <div class="min-w-0 truncate font-title text-sm font-extrabold tracking-tight text-foreground">Conversa</div>
+                    <div class="min-w-0 truncate font-mono text-[10px] uppercase tracking-[1.5px] text-muted-foreground">Ada · Felipe</div>
+                  </div>
+                  <div id="ds-skillmap-chat" class="flex min-w-0 flex-col gap-3 flex-1 min-h-0 overflow-y-auto pr-1 py-2">
+                    <div class="rounded-2xl rounded-tl-sm border border-border/50 bg-[hsl(var(--cream))] p-3.5 text-xs leading-relaxed text-foreground">
+                      <div class="mb-1 font-mono text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--green-700))]">Ada IA</div>
+                      Felipe, conte sobre uma situação em que uma consulta crítica de dados falhou em produção e você precisou aprender uma abordagem nova rapidamente.
+                    </div>
+                    <div class="ml-4 rounded-2xl rounded-tr-sm border border-[hsl(var(--green-200))] bg-[hsl(var(--green-50))] p-3.5 text-xs leading-relaxed text-foreground">
+                      <div class="mb-1 font-mono text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--green-700))]">Felipe · Candidato</div>
+                      Quando nosso pipeline travou por lock em tabela particionada, revisei o plano de execução (`EXPLAIN ANALYZE`), isolei a CTE recursiva e documentei o playbook para o time.
+                    </div>
+                    <div class="rounded-2xl rounded-tl-sm border border-border/50 bg-[hsl(var(--cream))] p-3.5 text-xs leading-relaxed text-foreground">
+                      <div class="mb-1 font-mono text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--green-700))]">Ada Sinais · Validação</div>
+                      Sinal comportamental e técnico validado com evidência prática direta na conversa.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Column 2: Radar & Skill Selector Buttons -->
+                <div class="min-w-0">
+                  <div class="min-w-0 rounded-ada-xl border border-border/60 bg-card p-5 shadow-sm flex flex-col">
+                    <div class="mb-3 flex items-center justify-between border-b border-border/40 pb-3">
+                      <div class="font-title text-sm font-extrabold tracking-tight text-foreground">Skill Map · Felipe</div>
+                      <div class="font-mono text-[10px] uppercase tracking-[1.5px] text-muted-foreground">1–4</div>
+                    </div>
+                    <div class="pr-1 overflow-x-hidden">
+                      <div class="w-full">
+                        <svg viewBox="0 0 280 280" class="w-full h-auto block overflow-visible" role="img" aria-label="Skill Map">
+                          <defs>
+                            <radialGradient id="ds-radar-fill" cx="50%" cy="50%" r="50%">
+                              <stop offset="0%" stop-color="#5BE066" stop-opacity="0.35"></stop>
+                              <stop offset="100%" stop-color="#5BE066" stop-opacity="0.10"></stop>
+                            </radialGradient>
+                          </defs>
+                          <polygon points="140.00,30.00 250.00,140.00 140.00,250.00 30.00,140.00" fill="none" stroke="#E4DECF" stroke-width="1"></polygon>
+                          <polygon points="140.00,57.50 222.50,140.00 140.00,222.50 57.50,140.00" fill="none" stroke="#E4DECF" stroke-width="1"></polygon>
+                          <polygon points="140.00,85.00 195.00,140.00 140.00,195.00 85.00,140.00" fill="none" stroke="#E4DECF" stroke-width="1"></polygon>
+                          <polygon points="140.00,112.50 167.50,140.00 140.00,167.50 112.50,140.00" fill="none" stroke="#E4DECF" stroke-width="1"></polygon>
+                          <line x1="140" y1="140" x2="140" y2="30" stroke="#E4DECF" stroke-width="0.75"></line>
+                          <line x1="140" y1="140" x2="250" y2="140" stroke="#E4DECF" stroke-width="0.75"></line>
+                          <line x1="140" y1="140" x2="140" y2="250" stroke="#E4DECF" stroke-width="0.75"></line>
+                          <line x1="140" y1="140" x2="30" y2="140" stroke="#E4DECF" stroke-width="0.75"></line>
+                          <polygon points="140.00,85.00 250.00,140.00 140.00,222.50 85.00,140.00" fill="url(#ds-radar-fill)" stroke="#0F9D29" stroke-width="1.4" style="transition: 600ms;"></polygon>
+                          <circle id="ds-radar-halo" cx="140" cy="85" r="11" fill="#5BE066" opacity="0.35"></circle>
+                          <circle cx="140" cy="85" r="5.5" fill="#fff" stroke="#0F9D29" stroke-width="2.2"></circle>
+                          <circle cx="250" cy="140" r="4" fill="#fff" stroke="#0F9D29" stroke-width="1.5"></circle>
+                          <circle cx="140" cy="222.5" r="4" fill="#fff" stroke="#0F9D29" stroke-width="1.5"></circle>
+                          <circle cx="85" cy="140" r="4" fill="#fff" stroke="#0F9D29" stroke-width="1.5"></circle>
+                        </svg>
+                      </div>
+
+                      <div class="mt-4 grid grid-cols-1 gap-1.5" id="ds-skill-buttons">
+                        <button type="button" data-skill="0" aria-pressed="true" class="ds-skill-btn group flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left text-xs transition-all border-[hsl(var(--green-500))] bg-[hsl(var(--green-100))] text-[hsl(var(--green-700))] shadow-sm">
+                          <span class="flex items-center gap-2 truncate font-medium"><span class="truncate">Postura de aprendizagem</span></span>
+                          <span class="flex shrink-0 items-center gap-2">
+                            <span class="inline-flex items-center gap-[3px]" aria-hidden="true">
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--green-500));"></span>
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--green-500));"></span>
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--cream-3));"></span>
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--cream-3));"></span>
+                            </span>
+                            <span class="font-mono text-[10px] font-bold tabular-nums">2/4</span>
+                          </span>
+                        </button>
+                        <button type="button" data-skill="1" aria-pressed="false" class="ds-skill-btn group flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left text-xs transition-all border-border/60 bg-background/60 text-muted-foreground hover:border-[hsl(var(--green-400))]">
+                          <span class="flex items-center gap-2 truncate font-medium"><span class="truncate">Plasticidade cognitiva</span></span>
+                          <span class="flex shrink-0 items-center gap-2">
+                            <span class="inline-flex items-center gap-[3px]" aria-hidden="true">
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--green-500));"></span>
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--green-500));"></span>
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--green-500));"></span>
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--green-500));"></span>
+                            </span>
+                            <span class="font-mono text-[10px] font-bold tabular-nums">4/4</span>
+                          </span>
+                        </button>
+                        <button type="button" data-skill="2" aria-pressed="false" class="ds-skill-btn group flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left text-xs transition-all border-border/60 bg-background/60 text-muted-foreground hover:border-[hsl(var(--green-400))]">
+                          <span class="flex items-center gap-2 truncate font-medium"><span class="truncate">SQL</span></span>
+                          <span class="flex shrink-0 items-center gap-2">
+                            <span class="inline-flex items-center gap-[3px]" aria-hidden="true">
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--green-500));"></span>
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--green-500));"></span>
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--green-500));"></span>
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--cream-3));"></span>
+                            </span>
+                            <span class="font-mono text-[10px] font-bold tabular-nums">3/4</span>
+                          </span>
+                        </button>
+                        <button type="button" data-skill="3" aria-pressed="false" class="ds-skill-btn group flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left text-xs transition-all border-border/60 bg-background/60 text-muted-foreground hover:border-[hsl(var(--green-400))]">
+                          <span class="flex items-center gap-2 truncate font-medium"><span class="truncate">Prompt engineering</span></span>
+                          <span class="flex shrink-0 items-center gap-2">
+                            <span class="inline-flex items-center gap-[3px]" aria-hidden="true">
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--green-500));"></span>
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--green-500));"></span>
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--cream-3));"></span>
+                              <span class="block h-1.5 w-3 rounded-sm" style="background: hsl(var(--cream-3));"></span>
+                            </span>
+                            <span class="font-mono text-[10px] font-bold tabular-nums">2/4</span>
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Column 3: Sinais Detectados -->
+                <div class="min-w-0 rounded-ada-xl border border-border/60 bg-gradient-to-br from-[hsl(var(--green-50))] to-card p-5 shadow-sm flex flex-col lg:h-[var(--skillmap-card-height)] lg:max-h-[var(--skillmap-card-height)]">
+                  <div class="mb-3 flex min-w-0 items-center justify-between gap-3 border-b border-border/40 pb-3">
+                    <div class="min-w-0 truncate font-title text-sm font-extrabold tracking-tight text-foreground">Sinais detectados</div>
+                    <div id="ds-signal-skill-label" class="min-w-0 truncate font-mono text-[10px] uppercase tracking-[1.5px] text-muted-foreground">Postura de aprendizagem</div>
+                  </div>
+                  <div class="pr-1">
+                    <div class="mb-3 font-mono text-[10px] uppercase tracking-[1.5px] text-[hsl(var(--ink-3))]">Evidências coletadas nesta conversa</div>
+                    <ul id="ds-signals-list" class="space-y-2.5">
+                      <li class="rounded-xl border border-[hsl(var(--green-200))] bg-white p-3 text-xs text-foreground shadow-sm">
+                        <div class="flex items-center justify-between font-mono text-[10px] font-bold text-[hsl(var(--green-700))]"><span>SINAL #01 · VALIDADO</span><span>2/4</span></div>
+                        <p class="mt-1 text-muted-foreground">Buscou documentação de planos de execução e aplicou imediatamente ao incidente real.</p>
+                      </li>
+                      <li class="rounded-xl border border-[hsl(var(--green-200))] bg-white p-3 text-xs text-foreground shadow-sm">
+                        <div class="flex items-center justify-between font-mono text-[10px] font-bold text-[hsl(var(--green-700))]"><span>SINAL #02 · VALIDADO</span><span>2/4</span></div>
+                        <p class="mt-1 text-muted-foreground">Transformou o aprendizado individual em playbook compartilhado para a equipe.</p>
+                      </li>
+                      <li class="h-[58px] rounded-xl border border-dashed border-border/50 bg-background/40" aria-hidden="true"></li>
+                      <li class="h-[58px] rounded-xl border border-dashed border-border/50 bg-background/40" aria-hidden="true"></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3.3 Program Cards (.program-card--interactive) & States -->
+            <div class="mb-16">
+              <div class="mb-6 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 class="font-title text-2xl font-extrabold text-foreground">Cards de Programa (`.program-card--interactive`)</h3>
+                  <p class="text-sm text-muted-foreground">Exibindo as 3 variações cromáticas oficiais (*para Contratar*, *para Desenvolver* e *para Mapear*), incluindo estado Hover forçado na segunda coluna.</p>
+                </div>
+                <span class="font-mono text-[11px] uppercase tracking-[1.5px] text-muted-foreground">Default · Hover State · Tema Amber</span>
+              </div>
+
+              <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <!-- Card 1: para Contratar (Default) -->
+                <div class="h-full">
+                  <a class="program-card group relative flex h-full flex-col gap-3.5 rounded-[16px] border px-6 pb-[22px] pt-[26px] program-card--interactive" href="#components" style="border-color: rgb(239, 234, 220); --card-hover-border: #B4D4FA; background: rgb(253, 251, 244);">
+                    <span class="inline-flex items-center justify-between gap-2 text-[11px] font-bold uppercase" style="letter-spacing: 0.14em; color: rgb(31, 85, 138);">
+                      <span>para Contratar</span>
+                      <span class="font-mono text-[10px] text-muted-foreground">DEFAULT</span>
+                    </span>
+                    <h3 class="program-card__title text-[26px] font-bold leading-[1.16]" style="letter-spacing: -0.03em; color: rgb(20, 20, 20); text-wrap: pretty;">Contrate com Inteligência Artificial</h3>
+                    <p class="text-[15px] leading-[1.55]" style="color: rgb(84, 83, 74); text-wrap: pretty;">Contratar talentos avaliando habilidades reais com velocidade e diversidade.</p>
+                    <div class="flex flex-wrap gap-2">
+                      <span class="inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-[5px] text-[12px] font-semibold" style="background: rgb(237, 245, 254); border: 1px solid rgb(201, 223, 250); color: rgb(31, 85, 138);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users h-[13px] w-[13px]" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>Candidatos externos
+                      </span>
+                      <span class="inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-[5px] text-[12px] font-semibold" style="background: rgb(237, 245, 254); border: 1px solid rgb(201, 223, 250); color: rgb(31, 85, 138); font-variant-numeric: tabular-nums;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock h-[13px] w-[13px]" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>2–6 semanas
+                      </span>
+                    </div>
+                    <div class="mt-auto flex flex-col items-start gap-6 pt-4" style="border-top: 1px solid rgb(243, 239, 227);">
+                      <div class="flex flex-wrap items-center gap-3 overflow-hidden">
+                        <img src="site/ada.tech/assets/google-BL9msixu.png" alt="Google" class="w-auto shrink-0" loading="lazy" style="max-height: 38px; filter: grayscale(1); opacity: 0.55;">
+                        <img src="site/ada.tech/__l5e/assets-v1/1711068a-9093-4ebd-8a0a-1ce2d0ede79f/anima.png" alt="Ânima" class="w-auto shrink-0" loading="lazy" style="max-height: 38px; filter: grayscale(1); opacity: 0.55;">
+                      </div>
+                      <span class="program-card__cta inline-flex items-center gap-[7px] whitespace-nowrap rounded-full px-4 py-[9px] text-[13px] font-bold" style="background: rgb(237, 245, 254); border: 1px solid rgb(201, 223, 250); color: rgb(31, 85, 138); --cta-hover-bg: #DBEAFD; --cta-hover-border: #A9CDF6;">
+                        Ver programa<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right h-[14px] w-[14px]" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                      </span>
+                    </div>
+                  </a>
+                </div>
+
+                <!-- Card 2: para Desenvolver (Forced Hover State) -->
+                <div class="h-full">
+                  <a class="program-card ds-card-force-hover group relative flex h-full flex-col gap-3.5 rounded-[16px] border px-6 pb-[22px] pt-[26px] program-card--interactive" href="#components" style="border-color: rgb(239, 234, 220); --card-hover-border: #B3F2A9; --cta-hover-bg: #DCF9D6; --cta-hover-border: #9EE890; background: rgb(253, 251, 244);">
+                    <span class="inline-flex items-center justify-between gap-2 text-[11px] font-bold uppercase" style="letter-spacing: 0.14em; color: rgb(10, 110, 29);">
+                      <span>para Desenvolver</span>
+                      <span class="font-mono text-[10px] text-[hsl(var(--green-700))]">:HOVER STATE</span>
+                    </span>
+                    <h3 class="program-card__title text-[26px] font-bold leading-[1.16]" style="letter-spacing: -0.03em; color: rgb(20, 20, 20); text-wrap: pretty;">Acelere o onboarding</h3>
+                    <p class="text-[15px] leading-[1.55]" style="color: rgb(84, 83, 74); text-wrap: pretty;">Acelerar prontidão e reduzir tempo de ramp-up com onboarding estruturado.</p>
+                    <div class="flex flex-wrap gap-2">
+                      <span class="inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-[5px] text-[12px] font-semibold" style="background: rgb(241, 252, 239); border: 1px solid rgb(179, 242, 169); color: rgb(10, 110, 29);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users h-[13px] w-[13px]" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>Colaboradores recém-contratados
+                      </span>
+                      <span class="inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-[5px] text-[12px] font-semibold" style="background: rgb(241, 252, 239); border: 1px solid rgb(179, 242, 169); color: rgb(10, 110, 29); font-variant-numeric: tabular-nums;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock h-[13px] w-[13px]" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>2–10 semanas
+                      </span>
+                    </div>
+                    <div class="mt-auto flex flex-col items-start gap-6 pt-4" style="border-top: 1px solid rgb(243, 239, 227);">
+                      <div class="flex flex-wrap items-center gap-3 overflow-hidden">
+                        <img src="site/ada.tech/__l5e/assets-v1/0e91a615-a35b-4746-a903-3ac986089085/mercado-livre.png" alt="Mercado Livre" class="w-auto shrink-0" loading="lazy" style="max-height: 38px; filter: grayscale(1); opacity: 0.55;">
+                        <img src="site/ada.tech/assets/bradesco-Ce7Z4tVm.png" alt="Bradesco" class="w-auto shrink-0" loading="lazy" style="max-height: 38px; filter: grayscale(1); opacity: 0.55;">
+                      </div>
+                      <span class="program-card__cta inline-flex items-center gap-[7px] whitespace-nowrap rounded-full px-4 py-[9px] text-[13px] font-bold" style="background: rgb(241, 252, 239); border: 1px solid rgb(179, 242, 169); color: rgb(10, 110, 29); --cta-hover-bg: #DCF9D6; --cta-hover-border: #9EE890;">
+                        Ver programa<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right h-[14px] w-[14px]" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                      </span>
+                    </div>
+                  </a>
+                </div>
+
+                <!-- Card 3: para Mapear (Amber Theme) -->
+                <div class="h-full">
+                  <a class="program-card group relative flex h-full flex-col gap-3.5 rounded-[16px] border px-6 pb-[22px] pt-[26px] program-card--interactive" href="#components" style="border-color: rgb(239, 234, 220); --card-hover-border: #F5C92A; background: rgb(253, 251, 244);">
+                    <span class="inline-flex items-center justify-between gap-2 text-[11px] font-bold uppercase" style="letter-spacing: 0.14em; color: rgb(107, 84, 0);">
+                      <span>para Mapear</span>
+                      <span class="font-mono text-[10px] text-muted-foreground">AMBER THEME</span>
+                    </span>
+                    <h3 class="program-card__title text-[26px] font-bold leading-[1.16]" style="letter-spacing: -0.03em; color: rgb(20, 20, 20); text-wrap: pretty;">Mapeie a proficiência do time</h3>
+                    <p class="text-[15px] leading-[1.55]" style="color: rgb(84, 83, 74); text-wrap: pretty;">Diagnosticar proficiência real para priorizar desenvolvimento, alocação e decisões.</p>
+                    <div class="flex flex-wrap gap-2">
+                      <span class="inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-[5px] text-[12px] font-semibold" style="background: rgb(254, 248, 226); border: 1px solid rgb(242, 222, 147); color: rgb(107, 84, 0);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users h-[13px] w-[13px]" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>Times internos inteiros
+                      </span>
+                      <span class="inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-[5px] text-[12px] font-semibold" style="background: rgb(254, 248, 226); border: 1px solid rgb(242, 222, 147); color: rgb(107, 84, 0); font-variant-numeric: tabular-nums;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock h-[13px] w-[13px]" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>2–6 semanas
+                      </span>
+                    </div>
+                    <div class="mt-auto flex flex-col items-start gap-6 pt-4" style="border-top: 1px solid rgb(243, 239, 227);">
+                      <div class="flex flex-wrap items-center gap-3 overflow-hidden">
+                        <img src="site/ada.tech/__l5e/assets-v1/2ef697e2-f359-4be3-9a02-58a416f01a0a/vivo.png" alt="Vivo" class="w-auto shrink-0" loading="lazy" style="max-height: 38px; filter: grayscale(1); opacity: 0.55;">
+                        <img src="site/ada.tech/__l5e/assets-v1/e2a1fc33-704a-485c-8a71-fa97ab41dd32/sem-parar.png" alt="Sem Parar" class="w-auto shrink-0" loading="lazy" style="max-height: 38px; filter: grayscale(1); opacity: 0.55;">
+                      </div>
+                      <span class="program-card__cta inline-flex items-center gap-[7px] whitespace-nowrap rounded-full px-4 py-[9px] text-[13px] font-bold" style="background: rgb(254, 248, 226); border: 1px solid rgb(242, 222, 147); color: rgb(107, 84, 0); --cta-hover-bg: #FBE69A; --cta-hover-border: #EDD06B;">
+                        Ver programa<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right h-[14px] w-[14px]" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                      </span>
+                    </div>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3.4 Badges, Pills & Trust Strip Components -->
+            <div class="rounded-ada-xl border border-border/60 bg-card p-6 md:p-8 shadow-sm">
+              <div class="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-4">
+                <h3 class="font-title text-xl font-extrabold text-foreground">Badges, Eyebrows &amp; Tags de Metadados</h3>
+                <span class="font-mono text-[11px] uppercase tracking-[1.5px] text-muted-foreground">Pills · Kickers · Trust Tags</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-3">
+                <div class="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-white px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[2px] text-foreground shadow-sm">
+                  <span class="h-2 w-2 rounded-full bg-[hsl(var(--green-500))]"></span>ADA SKILLS · A PLATAFORMA
+                </div>
+                <div class="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--green-600))]/25 bg-card/80 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[2px] text-[hsl(var(--green-700))] backdrop-blur">
+                  <span class="h-2 w-2 rounded-full bg-[hsl(var(--green-500))]"></span>NOVO PROGRAMA
+                </div>
+                <span class="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--green-200))] bg-[hsl(var(--green-100))] px-4 py-1.5 text-sm text-foreground/80">
+                  <i class="ph ph-shield-check text-[hsl(var(--green-700))]" aria-hidden="true"></i>Conformidade LGPD
+                </span>
+                <span class="inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-[5px] text-[12px] font-semibold" style="background: rgb(237, 245, 254); border: 1px solid rgb(201, 223, 250); color: rgb(31, 85, 138);">Tag Contratar</span>
+                <span class="inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-[5px] text-[12px] font-semibold" style="background: rgb(241, 252, 239); border: 1px solid rgb(179, 242, 169); color: rgb(10, 110, 29);">Tag Desenvolver</span>
+                <span class="inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-[5px] text-[12px] font-semibold" style="background: rgb(254, 248, 226); border: 1px solid rgb(242, 222, 147); color: rgb(107, 84, 0);">Tag Mapear</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =====================================================================
+             SECTION 04: LAYOUT, GRID, RADII & CANONICAL PATTERNS
+             ===================================================================== -->
+        <section id="layout" class="ds-section-anchor py-16 section-soft md:py-24">
+          <div class="mx-auto max-w-[1300px] px-6">
+            <div class="mb-12 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-white px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[2px] text-foreground shadow-sm">
+                  <span class="h-2 w-2 rounded-full bg-[hsl(var(--green-500))]"></span>
+                  04 · LAYOUT, ESPAÇAMENTO &amp; PADRÕES
+                </div>
+                <h2 class="font-title text-4xl font-extrabold tracking-[-0.03em] leading-[1.05] text-foreground md:text-5xl">
+                  Arquitetura em <span class="serif-em bg-gradient-to-br from-[hsl(var(--green-700))] to-[hsl(var(--green-500))] bg-clip-text text-transparent">1300px</span>.
+                </h2>
+              </div>
+              <p class="max-w-md text-sm text-muted-foreground md:text-base">
+                Containers centralizados (`max-w-[1300px] px-6`), paddings verticais `py-16 md:py-24`, raios personalizados (`rounded-ada` a `rounded-ada-xl`) e 3 padrões reais de layout da home.
+              </p>
+            </div>
+
+            <!-- 4.1 Container, Grid, Radii & Shadows -->
+            <div class="mb-14 grid gap-6 lg:grid-cols-2">
+              <div class="rounded-ada-xl border border-border/60 bg-card p-6 shadow-sm">
+                <div class="font-mono text-[10px] font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">Container &amp; Raios de Borda</div>
+                <h3 class="mt-1 font-title text-lg font-extrabold text-foreground">Tokens Estruturais</h3>
+                <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <div class="rounded-ada border border-border bg-background p-3">
+                    <div class="font-mono text-xs font-bold text-foreground">14px</div>
+                    <div class="font-mono text-[10px] text-muted-foreground">.rounded-ada</div>
+                  </div>
+                  <div class="rounded-ada-lg border border-border bg-background p-3">
+                    <div class="font-mono text-xs font-bold text-foreground">20px</div>
+                    <div class="font-mono text-[10px] text-muted-foreground">.rounded-ada-lg</div>
+                  </div>
+                  <div class="rounded-ada-xl border border-border bg-background p-3">
+                    <div class="font-mono text-xs font-bold text-foreground">28px</div>
+                    <div class="font-mono text-[10px] text-muted-foreground">.rounded-ada-xl</div>
+                  </div>
+                </div>
+                <div class="mt-4 space-y-2 border-t border-border/50 pt-4 font-mono text-xs text-muted-foreground">
+                  <div class="flex justify-between"><span>Container Principal:</span><span class="font-bold text-foreground">max-w-[1300px] mx-auto px-6</span></div>
+                  <div class="flex justify-between"><span>Section Padding Padrão:</span><span class="font-bold text-foreground">py-16 md:py-24 (64px / 96px)</span></div>
+                  <div class="flex justify-between"><span>Grids Responsivos:</span><span class="font-bold text-foreground">lg:grid-cols-3 / lg:grid-cols-12</span></div>
+                </div>
+              </div>
+
+              <div class="rounded-ada-xl border border-border/60 bg-card p-6 shadow-sm">
+                <div class="font-mono text-[10px] font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">Sombras &amp; Elevação</div>
+                <h3 class="mt-1 font-title text-lg font-extrabold text-foreground">Tokens de Sombra (`:root`)</h3>
+                <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                  <div class="rounded-2xl border border-border/50 bg-white p-4" style="box-shadow: var(--shadow-soft);">
+                    <div class="font-title text-xs font-bold text-foreground">--shadow-soft</div>
+                    <div class="mt-1 font-mono text-[10px] text-muted-foreground">Cards &amp; Containers</div>
+                  </div>
+                  <div class="rounded-2xl border border-border/50 bg-white p-4" style="box-shadow: var(--shadow-pop);">
+                    <div class="font-title text-xs font-bold text-foreground">--shadow-pop</div>
+                    <div class="mt-1 font-mono text-[10px] text-muted-foreground">Elevação Destacada</div>
+                  </div>
+                  <div class="rounded-2xl border border-[hsl(var(--green-200))] bg-white p-4" style="box-shadow: var(--shadow-green);">
+                    <div class="font-title text-xs font-bold text-foreground">--shadow-green</div>
+                    <div class="mt-1 font-mono text-[10px] text-muted-foreground">Glow Primário</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4.2 Real Layout Pattern 1: Split Feature Banner ("Formação em IA") -->
+            <div class="mb-12">
+              <div class="mb-3 font-mono text-xs font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">Padrão de Layout 01 · Split Grid 12 Colunas (7/12 + 5/12)</div>
+              <div class="relative overflow-hidden rounded-ada-xl border border-[hsl(var(--green-200))] p-8 md:p-12 lg:p-16" style="background: linear-gradient(125deg, hsl(var(--green-100)) 0%, hsl(var(--cream)) 55%, hsl(var(--green-50)) 100%); box-shadow: var(--shadow-soft);">
+                <div class="relative grid items-center gap-10 lg:grid-cols-12">
+                  <div class="lg:col-span-7">
+                    <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--green-600))]/25 bg-card/80 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[2px] text-[hsl(var(--green-700))] backdrop-blur">
+                      <span class="h-2 w-2 rounded-full bg-[hsl(var(--green-500))]"></span>NOVO PROGRAMA
+                    </div>
+                    <h2 class="font-title text-2xl font-extrabold leading-[1.1] tracking-[-0.03em] text-foreground sm:text-3xl md:text-[44px]">Formação em IA que sai do improviso e entra na rotina</h2>
+                    <p class="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">Diagnóstico individual de fluência, trilha prática adaptada por função e mensuração de evolução no trabalho real.</p>
+                  </div>
+                  <div class="lg:col-span-5">
+                    <div class="rounded-2xl border border-border/60 bg-card/85 p-6 backdrop-blur">
+                      <div class="mb-4 font-mono text-[10px] font-bold uppercase tracking-[2px] text-muted-foreground">O QUE INCLUI</div>
+                      <ul class="space-y-3 text-sm text-foreground">
+                        <li class="flex items-start gap-2.5"><i class="ph ph-check-circle mt-0.5 shrink-0 text-base text-[hsl(var(--green-700))]" aria-hidden="true"></i><span>Mapeamento de fluência em IA por pessoa e área</span></li>
+                        <li class="flex items-start gap-2.5"><i class="ph ph-check-circle mt-0.5 shrink-0 text-base text-[hsl(var(--green-700))]" aria-hidden="true"></i><span>Trilhas práticas conectadas às ferramentas do dia a dia</span></li>
+                        <li class="flex items-start gap-2.5"><i class="ph ph-check-circle mt-0.5 shrink-0 text-base text-[hsl(var(--green-700))]" aria-hidden="true"></i><span>Painel executivo de adoção e ganho de produtividade</span></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4.3 Real Layout Pattern 2: 4-Column Metric Grid -->
+            <div>
+              <div class="mb-3 font-mono text-xs font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">Padrão de Layout 02 · Grid de Métricas (sm:grid-cols-2 lg:grid-cols-4)</div>
+              <div class="grid gap-8 rounded-ada-xl border border-border/60 bg-card p-8 text-center sm:grid-cols-2 lg:grid-cols-4">
+                <div class="flex flex-col items-center">
+                  <div class="font-title text-4xl font-extrabold tracking-[-0.03em] text-[hsl(var(--green-700))] md:text-5xl">+100K</div>
+                  <p class="mt-2 max-w-[220px] text-sm text-muted-foreground">Pessoas avaliadas e formadas em tecnologia, dados e IA</p>
+                </div>
+                <div class="flex flex-col items-center">
+                  <div class="font-title text-4xl font-extrabold tracking-[-0.03em] text-[hsl(var(--green-700))] md:text-5xl">+9MM</div>
+                  <p class="mt-2 max-w-[220px] text-sm text-muted-foreground">Perfis alcançados em processos seletivos e programas</p>
+                </div>
+                <div class="flex flex-col items-center">
+                  <div class="font-title text-4xl font-extrabold tracking-[-0.03em] text-[hsl(var(--green-700))] md:text-5xl">+8k</div>
+                  <p class="mt-2 max-w-[220px] text-sm text-muted-foreground">Contratações e movimentações apoiadas pela Ada</p>
+                </div>
+                <div class="flex flex-col items-center">
+                  <div class="font-title text-4xl font-extrabold tracking-[-0.03em] text-[hsl(var(--green-700))] md:text-5xl">80%</div>
+                  <p class="mt-2 max-w-[220px] text-sm text-muted-foreground">Taxa média de engajamento até o fim das jornadas</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =====================================================================
+             SECTION 05: MOTION, INTERACTION & ICONOGRAPHY
+             ===================================================================== -->
+        <section id="motion" class="ds-section-anchor py-16 md:py-24">
+          <div class="mx-auto max-w-[1300px] px-6">
+            <div class="mb-12 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-white px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[2px] text-foreground shadow-sm">
+                  <span class="h-2 w-2 rounded-full bg-[hsl(var(--green-500))]"></span>
+                  05 · MOTION, INTERAÇÃO &amp; ÍCONES
+                </div>
+                <h2 class="font-title text-4xl font-extrabold tracking-[-0.03em] leading-[1.05] text-foreground md:text-5xl">
+                  Movimento elástico e <span class="serif-em bg-gradient-to-br from-[hsl(var(--green-700))] to-[hsl(var(--green-500))] bg-clip-text text-transparent">iconografia</span>.
+                </h2>
+              </div>
+              <button type="button" id="replay-motion-btn" class="btn-bloom w-fit">
+                <i class="ph ph-arrows-clockwise" aria-hidden="true"></i>Reproduzir animações de entrada
+              </button>
+            </div>
+
+            <!-- 5.1 Motion Gallery -->
+            <div class="mb-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <!-- Motion 1: Entrance Fade Up -->
+              <div class="rounded-ada-xl border border-border/60 bg-card p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <span class="font-mono text-[10px] font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">.animate-ada-fade-up</span>
+                  <h3 class="mt-1 font-title text-base font-extrabold text-foreground">Entrance Fade Up</h3>
+                  <p class="mt-1 text-xs text-muted-foreground">0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards — usado na entrada do Hero e blocos em scroll reveal.</p>
+                </div>
+                <div class="mt-5 rounded-xl border border-border/50 bg-background p-4 text-center">
+                  <div id="motion-demo-fade" class="animate-ada-fade-up inline-flex items-center gap-2 rounded-full bg-[hsl(var(--green-100))] px-3.5 py-1.5 font-mono text-xs font-bold text-[hsl(var(--green-700))]">
+                    <span class="h-2 w-2 rounded-full bg-[hsl(var(--green-500))]"></span>translateY(16px → 0)
+                  </div>
+                </div>
+              </div>
+
+              <!-- Motion 2: Ambient Orb Float -->
+              <div class="rounded-ada-xl border border-border/60 bg-card p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <span class="font-mono text-[10px] font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">.animate-float (@keyframes bloom-float)</span>
+                  <h3 class="mt-1 font-title text-base font-extrabold text-foreground">Ambient Orb Float</h3>
+                  <p class="mt-1 text-xs text-muted-foreground">7s ease-in-out infinite — flutuação contínua das esferas `.bloom-orb` no fundo das seções.</p>
+                </div>
+                <div class="mt-5 flex justify-center rounded-xl border border-border/50 bg-background p-4">
+                  <div class="animate-float inline-flex items-center gap-2 rounded-full border border-[hsl(var(--green-200))] bg-[hsl(var(--green-50))] px-4 py-1.5 font-mono text-xs font-bold text-[hsl(var(--green-700))]">
+                    Flutuação Contínua
+                  </div>
+                </div>
+              </div>
+
+              <!-- Motion 3: Hover Lift & Glow -->
+              <div class="rounded-ada-xl border border-border/60 bg-card p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <span class="font-mono text-[10px] font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">.btn-bloom &amp; .program-card--interactive</span>
+                  <h3 class="mt-1 font-title text-base font-extrabold text-foreground">Hover Lift &amp; Glow</h3>
+                  <p class="mt-1 text-xs text-muted-foreground">Elevação `-1px` a `-3px` com transição suave (`0.22s–0.28s cubic-bezier(.22,.61,.36,1)`).</p>
+                </div>
+                <div class="mt-5 flex justify-center rounded-xl border border-border/50 bg-background p-4">
+                  <button type="button" class="btn-bloom" style="padding: 10px 18px; font-size: 12px;">Passe o mouse (Hover)</button>
+                </div>
+              </div>
+
+              <!-- Motion 4: Grayscale Logo Transition -->
+              <div class="rounded-ada-xl border border-border/60 bg-card p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <span class="font-mono text-[10px] font-bold uppercase tracking-[1.5px] text-[hsl(var(--green-700))]">transition-all duration-300</span>
+                  <h3 class="mt-1 font-title text-base font-extrabold text-foreground">Partner Logo Reveal</h3>
+                  <p class="mt-1 text-xs text-muted-foreground">`grayscale opacity-60 hover:grayscale-0 hover:opacity-100` nas logos de empresas parceiras.</p>
+                </div>
+                <div class="mt-5 flex items-center justify-center gap-4 rounded-xl border border-border/50 bg-background p-4">
+                  <img src="site/ada.tech/assets/google-BL9msixu.png" alt="Google" class="h-6 w-auto object-contain grayscale opacity-60 transition-all duration-300 hover:grayscale-0 hover:opacity-100 cursor-pointer">
+                  <img src="site/ada.tech/assets/nestle-CAme1vOg.png" alt="Nestlé" class="h-6 w-auto object-contain grayscale opacity-60 transition-all duration-300 hover:grayscale-0 hover:opacity-100 cursor-pointer">
+                </div>
+              </div>
+            </div>
+
+            <!-- 5.2 Iconography System (Phosphor Icons + Lucide SVGs) -->
+            <div class="rounded-ada-xl border border-border/60 bg-card p-6 md:p-8 shadow-sm">
+              <div class="mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-4">
+                <div>
+                  <h3 class="font-title text-xl font-extrabold text-foreground">06 · Sistema de Ícones (Phosphor Regular + Lucide SVG)</h3>
+                  <p class="text-xs text-muted-foreground">Ícones exatamente como utilizados na referência, com variantes de tamanho e herança automática de cor (`currentColor`).</p>
+                </div>
+                <span class="font-mono text-[11px] uppercase tracking-[1.5px] text-muted-foreground">ph ph-* · lucide-*</span>
+              </div>
+
+              <div class="grid gap-6 lg:grid-cols-2">
+                <!-- Phosphor Icons -->
+                <div>
+                  <div class="mb-3 font-mono text-xs font-bold text-[hsl(var(--green-700))]">Phosphor Icons (`i.ph.ph-*`)</div>
+                  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    <div class="flex items-center gap-3 rounded-xl border border-border/50 bg-background/60 p-3">
+                      <i class="ph ph-paper-plane-tilt text-xl text-[hsl(var(--green-700))]" aria-hidden="true"></i>
+                      <div class="font-mono text-[11px] text-foreground">ph-paper-plane-tilt</div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-xl border border-border/50 bg-background/60 p-3">
+                      <i class="ph ph-shield-check text-xl text-[hsl(var(--green-700))]" aria-hidden="true"></i>
+                      <div class="font-mono text-[11px] text-foreground">ph-shield-check</div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-xl border border-border/50 bg-background/60 p-3">
+                      <i class="ph ph-lock-key text-xl text-[hsl(var(--green-700))]" aria-hidden="true"></i>
+                      <div class="font-mono text-[11px] text-foreground">ph-lock-key</div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-xl border border-border/50 bg-background/60 p-3">
+                      <i class="ph ph-users-three text-xl text-[hsl(var(--green-700))]" aria-hidden="true"></i>
+                      <div class="font-mono text-[11px] text-foreground">ph-users-three</div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-xl border border-border/50 bg-background/60 p-3">
+                      <i class="ph ph-clipboard-text text-xl text-[hsl(var(--green-700))]" aria-hidden="true"></i>
+                      <div class="font-mono text-[11px] text-foreground">ph-clipboard-text</div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-xl border border-border/50 bg-background/60 p-3">
+                      <i class="ph ph-check-circle text-xl text-[hsl(var(--green-700))]" aria-hidden="true"></i>
+                      <div class="font-mono text-[11px] text-foreground">ph-check-circle</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Lucide Icons + Size & Color Inheritance -->
+                <div>
+                  <div class="mb-3 font-mono text-xs font-bold text-[hsl(var(--green-700))]">Lucide SVGs &amp; Escala de Tamanhos (`13px` a `24px`)</div>
+                  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    <div class="flex items-center gap-3 rounded-xl border border-border/50 bg-background/60 p-3 text-foreground">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right h-5 w-5"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                      <div class="font-mono text-[11px]">arrow-right (20px)</div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-xl border border-border/50 bg-background/60 p-3 text-[hsl(var(--green-700))]">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user h-4 w-4"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                      <div class="font-mono text-[11px]">user (16px)</div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-xl border border-border/50 bg-background/60 p-3" style="color: rgb(31, 85, 138);">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users h-[13px] w-[13px]"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                      <div class="font-mono text-[11px]">users (13px Blue)</div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-xl border border-border/50 bg-background/60 p-3" style="color: rgb(107, 84, 0);">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock h-[13px] w-[13px]"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                      <div class="font-mono text-[11px]">clock (13px Amber)</div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-xl border border-border/50 bg-background/60 p-3 text-foreground">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe h-3.5 w-3.5"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+                      <div class="font-mono text-[11px]">globe (14px)</div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-xl border border-border/50 bg-background/60 p-3 text-foreground">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu h-5 w-5"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg>
+                      <div class="font-mono text-[11px]">menu (20px)</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Canonical Footer (Cloned from index.html) -->
+      <footer class="border-t border-border/60 bg-background">
+        <div class="mx-auto max-w-[1300px] px-6 py-12 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex items-center gap-4">
+            <img src="site/ada.tech/assets/ada-marca-topo-Dpmqhtlv.png" alt="Ada Tech" width="348" height="215" class="h-9 w-auto object-contain" style="aspect-ratio: 348 / 215;">
+            <p class="text-sm text-muted-foreground">Ada Design System &amp; Pattern Library · Baseado fielmente em `index.html`.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+            <a href="#hero" class="transition-ada hover:text-foreground">Topo</a>
+            <a href="#typography" class="transition-ada hover:text-foreground">Tipografia</a>
+            <a href="#colors" class="transition-ada hover:text-foreground">Cores</a>
+            <a href="#components" class="transition-ada hover:text-foreground">Componentes</a>
+            <a href="#layout" class="transition-ada hover:text-foreground">Layout</a>
+            <a href="#motion" class="transition-ada hover:text-foreground">Motion &amp; Ícones</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Interactive Design System Script -->
+  <script>
+    (function () {
+      const toastContainer = document.getElementById('ds-toast-container');
+      function showToast(msg) {
+        if (!toastContainer) return;
+        const el = document.createElement('div');
+        el.className = 'rounded-full border border-[hsl(var(--green-200))] bg-[hsl(var(--ink))] px-4 py-2 font-mono text-xs font-bold text-[hsl(var(--cream))] shadow-lg animate-ada-fade-up';
+        el.textContent = msg;
+        toastContainer.appendChild(el);
+        setTimeout(() => el.remove(), 2200);
+      }
+
+      // Copy swatches
+      document.querySelectorAll('[data-copy]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const val = btn.getAttribute('data-copy');
+          if (navigator.clipboard) navigator.clipboard.writeText(val);
+          showToast('Copiado: ' + val);
+        });
+      });
+
+      // Copy root tokens button
+      const copyAllBtn = document.getElementById('copy-all-tokens-btn');
+      if (copyAllBtn) {
+        copyAllBtn.addEventListener('click', () => {
+          const cssTokens = `:root { --cream: 48 60% 97%; --ink: 0 0% 8%; --green-400: 125 70% 62%; --green-500: 130 67% 48%; --green-700: 130 55% 34%; }`;
+          if (navigator.clipboard) navigator.clipboard.writeText(cssTokens);
+          showToast('Tokens :root copiados!');
+        });
+      }
+
+      // Mobile drawer toggle
+      const mobileToggle = document.getElementById('mobile-menu-toggle');
+      const mobileDrawer = document.getElementById('mobile-nav-drawer');
+      if (mobileToggle && mobileDrawer) {
+        mobileToggle.addEventListener('click', () => {
+          mobileDrawer.classList.toggle('hidden');
+        });
+      }
+
+      // Interactive Skill Map switching
+      const skillsData = [
+        {
+          name: 'Postura de aprendizagem',
+          cx: 140, cy: 85,
+          signals: [
+            { tag: 'SINAL #01 · VALIDADO', score: '2/4', text: 'Buscou documentação de planos de execução e aplicou imediatamente ao incidente real.' },
+            { tag: 'SINAL #02 · VALIDADO', score: '2/4', text: 'Transformou o aprendizado individual em playbook compartilhado para a equipe.' }
+          ]
+        },
+        {
+          name: 'Plasticidade cognitiva',
+          cx: 250, cy: 140,
+          signals: [
+            { tag: 'SINAL #01 · VALIDADO', score: '4/4', text: 'Reestruturou a hipótese inicial assim que as métricas de lock apontaram outra causa raiz.' },
+            { tag: 'SINAL #02 · VALIDADO', score: '4/4', text: 'Combinou repertório de banco de dados relacional e observabilidade sob pressão.' }
+          ]
+        },
+        {
+          name: 'SQL',
+          cx: 140, cy: 222.5,
+          signals: [
+            { tag: 'SINAL #01 · VALIDADO', score: '3/4', text: 'Domínio de EXPLAIN ANALYZE, particionamento e otimização de CTEs recursivas.' },
+            { tag: 'SINAL #02 · VALIDADO', score: '3/4', text: 'Identificou contenção de índices compostos sem comprometer leitura transacional.' }
+          ]
+        },
+        {
+          name: 'Prompt engineering',
+          cx: 85, cy: 140,
+          signals: [
+            { tag: 'SINAL #01 · VALIDADO', score: '2/4', text: 'Estruturou contexto com schema DDL e restrições claras para geração de testes SQL.' }
+          ]
+        }
+      ];
+
+      const skillBtns = document.querySelectorAll('.ds-skill-btn');
+      const halo = document.getElementById('ds-radar-halo');
+      const skillLabel = document.getElementById('ds-signal-skill-label');
+      const signalsList = document.getElementById('ds-signals-list');
+
+      skillBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.getAttribute('data-skill') || 0);
+          const item = skillsData[idx];
+          if (!item) return;
+
+          skillBtns.forEach((b) => {
+            b.setAttribute('aria-pressed', 'false');
+            b.className = 'ds-skill-btn group flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left text-xs transition-all border-border/60 bg-background/60 text-muted-foreground hover:border-[hsl(var(--green-400))]';
+          });
+          btn.setAttribute('aria-pressed', 'true');
+          btn.className = 'ds-skill-btn group flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left text-xs transition-all border-[hsl(var(--green-500))] bg-[hsl(var(--green-100))] text-[hsl(var(--green-700))] shadow-sm';
+
+          if (halo) {
+            halo.setAttribute('cx', String(item.cx));
+            halo.setAttribute('cy', String(item.cy));
+          }
+          if (skillLabel) skillLabel.textContent = item.name;
+          if (signalsList) {
+            signalsList.innerHTML = item.signals.map((s) => `
+              <li class="rounded-xl border border-[hsl(var(--green-200))] bg-white p-3 text-xs text-foreground shadow-sm animate-ds-chat">
+                <div class="flex items-center justify-between font-mono text-[10px] font-bold text-[hsl(var(--green-700))]"><span>${s.tag}</span><span>${s.score}</span></div>
+                <p class="mt-1 text-muted-foreground">${s.text}</p>
+              </li>
+            `).join('') + '<li class="h-[58px] rounded-xl border border-dashed border-border/50 bg-background/40" aria-hidden="true"></li>';
+          }
+        });
+      });
+
+      // Replay entrance animation button
+      const replayBtn = document.getElementById('replay-motion-btn');
+      const fadeDemo = document.getElementById('motion-demo-fade');
+      if (replayBtn && fadeDemo) {
+        replayBtn.addEventListener('click', () => {
+          fadeDemo.classList.remove('animate-ada-fade-up');
+          void fadeDemo.offsetWidth;
+          fadeDemo.classList.add('animate-ada-fade-up');
+          showToast('Animação .animate-ada-fade-up reproduzida');
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
