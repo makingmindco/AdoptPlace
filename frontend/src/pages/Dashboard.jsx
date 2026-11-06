@@ -1,10 +1,100 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { pets } from '../data/pets'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { api } from '../services/api'
+
+const statusLabel = { draft: 'Rascunho', published: 'Disponível', adoption_in_progress: 'Em processo', adopted: 'Adotado', archived: 'Arquivado' }
+const speciesLabel = { dog: 'Cachorro', cat: 'Gato', other: 'Outro' }
+const sizeLabel = { small: 'Pequeno', medium: 'Médio', large: 'Grande' }
+
 export default function Dashboard() {
-  const [items, setItems] = useState(pets)
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const [items, setItems] = useState([])
+  const [requests, setRequests] = useState([])
   const [query, setQuery] = useState('')
   const [message, setMessage] = useState('')
-  const available = items.filter(pet => pet.status === 'available').length
-  return <main id="main" className="container dashboard"><div className="dashboard-layout"><aside className="sidebar"><span className="eyebrow">PORTAL DA ONG</span><h3>Amigos dos Bichos</h3><span className="sidebar-active">♡ Gerenciar animais</span><Link to="/#catalogo">↗ Ver catálogo público</Link><Link to="/login">← Voltar ao login</Link><p className="small muted">Demonstração local.<br />Nenhuma sessão autenticada.</p></aside><section className="dashboard-main"><span className="eyebrow">CADA CADASTRO, UMA NOVA CHANCE</span><h1>Seus bichinhos</h1><p className="muted">Acompanhe quem espera um lar e celebre cada novo começo.</p><p className="notice">Painel demonstrativo. As alterações existem apenas nesta página e são desfeitas ao recarregar. O gerenciamento real será conectado ao backend.</p><div className="stats">{[['Animais cadastrados', items.length], ['Esperando um lar', available], ['Finais felizes', items.length - available]].map(([label, count]) => <div key={label}><span>{label}</span><strong>{count.toString().padStart(2, '0')}</strong></div>)}</div><div className="panel"><div className="panel-toolbar"><label className="field">Buscar por nome<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Qual bichinho você procura?" /></label><button className="button" onClick={() => setMessage('O cadastro de animais será disponibilizado com a integração do backend.')}>+ Cadastrar animal</button></div><div className="table-scroll"><table><caption className="sr-only">Animais da ONG demonstrativa</caption><thead><tr><th>Animal</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead><tbody>{items.filter(pet => pet.name.toLowerCase().includes(query.toLowerCase())).map(pet => <tr key={pet.id}><td><Link className="table-pet" to={`/pets/${pet.id}`}><img src={pet.image} alt="" /><strong>{pet.name}</strong></Link></td><td>{pet.species}<small>{pet.age} · {pet.size}</small></td><td><span className={`status ${pet.status === 'adopted' ? 'adopted' : ''}`}>{pet.status === 'available' ? 'Disponível' : 'Adotado'}</span></td><td><button className="text-button" onClick={() => { setItems(items.map(item => item.id === pet.id ? { ...item, status: item.status === 'available' ? 'adopted' : 'available' } : item)); setMessage(`Status de ${pet.name} alterado na demonstração.`) }}>{pet.status === 'available' ? 'Marcar adotado' : 'Disponibilizar'}</button></td></tr>)}</tbody></table>{!items.some(pet => pet.name.toLowerCase().includes(query.toLowerCase())) && <p className="empty">Nenhum animal encontrado com esse nome.</p>}</div><p className="feedback" role="status">{message}</p></div></section></div></main>
+  const [showForm, setShowForm] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([api.organizationPets(), api.adoptionRequests()])
+      .then(([petsResponse, requestsResponse]) => {
+        setItems(petsResponse.data || [])
+        setRequests(requestsResponse.data || [])
+      })
+      .catch(error => setMessage(error.message))
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function signOut() { await logout(); navigate('/') }
+  async function toggleAvailability(pet) {
+    try {
+      const makeAvailable = pet.status === 'adopted' || pet.status === 'draft'
+      const updated = await api[makeAvailable ? 'publishPet' : 'markAdopted'](pet.id)
+      setItems(current => current.map(item => item.id === pet.id ? updated : item))
+      setMessage(makeAvailable ? `${pet.name} está disponível novamente.` : `${pet.name} ganhou um novo lar!`)
+    } catch (error) { setMessage(error.message) }
+  }
+
+  const visible = items.filter(pet => pet.name.toLowerCase().includes(query.toLowerCase()))
+  const available = items.filter(pet => pet.status === 'published').length
+  return <main id="main" className="container dashboard"><div className="dashboard-layout">
+    <aside className="sidebar"><span className="eyebrow">PORTAL DA ORGANIZAÇÃO</span><h3>{user?.organization?.name || user?.name}</h3>
+      <span className="sidebar-active">♡ Gerenciar animais</span><Link to="/#catalogo">↗ Ver catálogo público</Link><button className="text-button" onClick={signOut}>Sair da conta</button>
+      <p className="small muted">Status: {user?.organization?.verification_status === 'approved' ? 'organização verificada' : 'aguardando verificação'}</p>
+    </aside>
+    <section className="dashboard-main"><span className="eyebrow">CADA CADASTRO, UMA NOVA CHANCE</span><h1>Seus bichinhos</h1><p className="muted">Acompanhe quem espera um lar e os novos pedidos de adoção.</p>
+      {user?.organization?.verification_status !== 'approved' && <p className="notice">O cadastro está em análise. Você poderá gerenciar animais assim que a organização for aprovada.</p>}
+      <div className="stats">{[['Animais cadastrados', items.length], ['Esperando um lar', available], ['Interesses recebidos', requests.length]].map(([label, count]) => <div key={label}><span>{label}</span><strong>{String(count).padStart(2, '0')}</strong></div>)}</div>
+      <div className="panel"><div className="panel-toolbar"><label className="field">Buscar por nome<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Digite o nome do animal" /></label><button className="button" onClick={() => setShowForm(value => !value)}>{showForm ? 'Fechar cadastro' : '+ Cadastrar animal'}</button></div>
+        {showForm && <PetForm onCreated={pet => { setItems(current => [pet, ...current]); setShowForm(false); setMessage('Animal cadastrado como rascunho. Revise e publique quando quiser.') }} />}
+        {loading ? <p>Carregando animais…</p> : <div className="table-scroll"><table><caption className="sr-only">Animais da organização</caption><thead><tr><th>Animal</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+          {visible.map(pet => <tr key={pet.id}><td><Link className="table-pet" to={`/pets/${pet.slug}`}>{pet.cover_photo ? <img src={pet.cover_photo} alt="" /> : <span className="pet-thumb-placeholder">♡</span>}<strong>{pet.name}</strong></Link></td><td>{speciesLabel[pet.species] || pet.species}<small>{pet.approximate_age || 'Idade a confirmar'} · {sizeLabel[pet.size] || pet.size}</small></td><td><span className={`status ${pet.status === 'adopted' ? 'adopted' : ''}`}>{statusLabel[pet.status] || pet.status}</span></td><td>{['published', 'adopted', 'draft'].includes(pet.status) && <button className="text-button" onClick={() => toggleAvailability(pet)}>{pet.status === 'published' ? 'Marcar adotado' : 'Disponibilizar'}</button>}</td></tr>)}
+        </tbody></table>{visible.length === 0 && <p className="empty">Nenhum animal encontrado.</p>}</div>}
+        <p className="feedback" role="status">{message}</p>
+      </div>
+      <section className="panel adoption-list"><h2>Interesses de adoção</h2>{requests.length === 0 ? <p className="muted">Nenhum interesse recebido até agora.</p> : requests.map(item => <article key={item.id} className="notice"><strong>{item.adopter?.name}</strong> quer conhecer <strong>{item.pet?.name}</strong><br /><small>{item.adopter?.email} · {item.adopter?.phone}</small></article>)}</section>
+    </section>
+  </div></main>
+}
+
+function PetForm({ onCreated }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  async function submit(event) {
+    event.preventDefault(); setBusy(true); setError('')
+    const formData = new FormData(event.currentTarget)
+    const photo = formData.get('photo')
+    const values = Object.fromEntries(formData)
+    const body = { ...values, location: { city: values.city, state: values.state }, personality: values.personality.split(',').map(value => value.trim()).filter(Boolean) }
+    delete body.city; delete body.state; delete body.photo
+    try {
+      let pet = await api.createPet(body)
+      if (photo?.size) {
+        const upload = new FormData()
+        upload.append('photo', photo)
+        upload.append('is_cover', '1')
+        pet = await api.uploadPetPhoto(pet.id, upload)
+      }
+      onCreated(pet)
+    } catch (err) { setError(Object.values(err.errors || {}).flat().join(' ') || err.message) } finally { setBusy(false) }
+  }
+  return <form className="pet-form" onSubmit={submit}><div className="pet-form-heading"><div><span className="eyebrow">NOVO PERFIL</span><h3>Conte a história desse bichinho</h3><p>Informações claras ajudam a encontrar uma família compatível.</p></div><span className="pet-form-step">Cadastro inicial</span></div>
+    <div className="pet-form-grid">
+      <label className="field">Nome<input name="name" required maxLength={80} placeholder="Ex.: Luna" /></label>
+      <label className="field">Espécie<select name="species"><option value="dog">Cachorro</option><option value="cat">Gato</option><option value="other">Outro</option></select></label>
+      <label className="field">Raça<input name="breed" placeholder="Ex.: Sem raça definida" /></label>
+      <label className="field">Sexo<select name="sex"><option value="female">Fêmea</option><option value="male">Macho</option><option value="unknown">Não identificado</option></select></label>
+      <label className="field">Porte<select name="size"><option value="small">Pequeno</option><option value="medium">Médio</option><option value="large">Grande</option></select></label>
+      <label className="field">Idade aproximada<input name="approximate_age" placeholder="Ex.: 2 anos" /></label>
+      <label className="field">Cidade<input name="city" required placeholder="São Paulo" /></label>
+      <label className="field">Estado<input name="state" minLength={2} maxLength={2} required placeholder="SP" /></label>
+      <label className="field pet-form-wide">Personalidade<input name="personality" placeholder="carinhoso, brincalhão, sociável" /></label>
+      <label className="field pet-form-wide">Descrição<textarea name="description" required minLength={30} maxLength={4000} placeholder="Conte sobre a rotina, o temperamento e o lar ideal para esse animal." /></label>
+      <label className="field pet-form-wide file-field"><span>Foto principal</span><input name="photo" type="file" accept="image/jpeg,image/png,image/webp" required /><small>JPG, PNG ou WebP. Use uma foto clara, sem texto ou marca-d'água.</small></label>
+    </div>
+    <div className="pet-form-actions"><p>O perfil será salvo como rascunho para sua revisão.</p><button className="button" disabled={busy}>{busy ? 'Salvando…' : 'Salvar perfil'}</button></div>
+    {error && <div className="form-alert" role="alert"><span>!</span><p>{error}</p></div>}
+  </form>
 }

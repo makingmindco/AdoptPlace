@@ -1,10 +1,23 @@
-const baseUrl = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
-export async function request(path, { body, ...options } = {}) {
-  const response = await fetch(`${baseUrl}${path}`, {
+const apiBase = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '')
+const backendOrigin = new URL(apiBase, window.location.origin).origin
+
+function cookie(name) {
+  return document.cookie.split('; ').find(item => item.startsWith(`${name}=`))?.split('=').slice(1).join('=')
+}
+
+export async function request(path, { body, headers, ...options } = {}) {
+  const xsrf = cookie('XSRF-TOKEN')
+  const isFormData = body instanceof FormData
+  const response = await fetch(`${apiBase}${path}`, {
     ...options,
-    headers: { Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}), ...options.headers },
     credentials: 'include',
-    ...(body ? { body: JSON.stringify(body) } : {}),
+    headers: {
+      Accept: 'application/json',
+      ...(!isFormData && body ? { 'Content-Type': 'application/json' } : {}),
+      ...(xsrf ? { 'X-XSRF-TOKEN': decodeURIComponent(xsrf) } : {}),
+      ...headers,
+    },
+    ...(body ? { body: isFormData ? body : JSON.stringify(body) } : {}),
   })
   const data = response.status === 204 ? null : await response.json().catch(() => null)
   if (!response.ok) {
@@ -15,8 +28,35 @@ export async function request(path, { body, ...options } = {}) {
   }
   return data
 }
+
+async function csrf() {
+  await fetch(`${backendOrigin}/sanctum/csrf-cookie`, { credentials: 'include' })
+}
+
+async function authenticatedMutation(path, options) {
+  await csrf()
+  return request(path, options)
+}
+
+const unwrap = payload => payload?.data ?? payload
+
 export const api = {
-  pets: signal => request('/pets', { signal }),
-  login: body => request('/login', { method: 'POST', body }),
-  register: body => request('/register', { method: 'POST', body }),
+  pets: params => request(`/pets?${new URLSearchParams(params || {})}`),
+  pet: slug => request(`/pets/${slug}`).then(unwrap),
+  adoptionRequest: (petId, body) => request(`/pets/${petId}/adoption-requests`, { method: 'POST', body }),
+  login: body => authenticatedMutation('/auth/login', { method: 'POST', body }).then(unwrap),
+  register: body => authenticatedMutation('/auth/register', { method: 'POST', body }).then(unwrap),
+  logout: () => request('/auth/logout', { method: 'POST' }),
+  me: () => request('/auth/me').then(unwrap),
+  organization: () => request('/organization').then(unwrap),
+  updateOrganization: body => request('/organization', { method: 'PATCH', body }).then(unwrap),
+  organizationPets: () => request('/organization/pets'),
+  createPet: body => request('/organization/pets', { method: 'POST', body }).then(unwrap),
+  updatePet: (id, body) => request(`/organization/pets/${id}`, { method: 'PATCH', body }).then(unwrap),
+  deletePet: id => request(`/organization/pets/${id}`, { method: 'DELETE' }),
+  publishPet: id => request(`/organization/pets/${id}/publish`, { method: 'POST' }).then(unwrap),
+  markAdopted: id => request(`/organization/pets/${id}/mark-adopted`, { method: 'POST' }).then(unwrap),
+  uploadPetPhoto: (id, body) => request(`/organization/pets/${id}/photos`, { method: 'POST', body }).then(unwrap),
+  adoptionRequests: () => request('/organization/adoption-requests'),
+  updateAdoptionRequest: (id, body) => request(`/organization/adoption-requests/${id}`, { method: 'PATCH', body }),
 }
