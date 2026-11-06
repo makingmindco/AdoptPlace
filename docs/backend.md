@@ -1,66 +1,53 @@
-# Preparação do backend
+# Backend do AdoptPlace
 
-O projeto contém Laravel 9 e Sanctum 3. A integração com MongoDB ainda não foi
-instalada. As variáveis MONGODB_URI e MONGODB_DATABASE estão reservadas no exemplo;
-não foi ativado um driver inexistente. A configuração SQL do template permanece.
+## Arquitetura
 
-Antes de desenvolver a persistência, revisar a atualização do Laravel e validar as
-versões compatíveis do PHP, extensão mongodb e integração oficial MongoDB Laravel.
+Laravel 13 expõe uma API versionada em `/api/v1`. O catálogo e o envio de interesse são públicos. Sessões de organizações usam cookies HttpOnly do Laravel Sanctum; políticas impedem uma organização de acessar animais ou pedidos de outra. MongoDB armazena usuários, organizações, animais, pedidos, tokens e auditoria.
 
-## Iniciar (com PHP e Composer no PATH)
+Dados pessoais do adotante são criptografados no documento de pedido. O histórico de mudanças e os logs de auditoria apoiam moderação e rastreabilidade.
 
-```powershell
-cd backend
-composer install
-Copy-Item .env.example .env
-php artisan key:generate
-php artisan serve --host=127.0.0.1 --port=8000
-```
+## Principais endpoints
 
-Não sobrescreva um .env existente. Ajuste APP_URL=http://127.0.0.1:8000 e
-FRONTEND_URL=http://localhost:5173 conforme a origem efetiva.
-GET /api/health retorna {"status":"ok","service":"adoptplace-api"} sem acessar o banco.
-PHP e Composer não foram encontrados neste terminal; Laravel não pôde ser executado.
-
-## Contrato proposto (a implementar)
-
-| Método | Endpoint | Objetivo |
+| Método | Endpoint | Acesso |
 | --- | --- | --- |
-| GET | /api/pets | Catálogo público, filtros e paginação |
-| GET | /api/pets/{id} | Perfil público do animal |
-| POST | /api/register | Cadastro da organização/protetor |
-| POST | /api/login | Autenticação |
-| POST | /api/logout | Encerrar sessão |
-| GET | /api/user | Usuário autenticado (rota Sanctum do template) |
-| POST | /api/pets | Criar animal da ONG autenticada |
-| PATCH | /api/pets/{id} | Editar perfil/status, autorizado por organização |
+| GET | `/api/v1/pets` | público, filtros e paginação |
+| GET | `/api/v1/pets/{slug}` | público |
+| POST | `/api/v1/pets/{id}/adoption-requests` | público, limitado por IP |
+| POST | `/api/v1/auth/register` | público |
+| POST | `/api/v1/auth/login` | público, limitado |
+| GET | `/api/v1/auth/me` | autenticado |
+| GET/POST | `/api/v1/organization/pets` | organização aprovada |
+| PATCH/DELETE | `/api/v1/organization/pets/{id}` | organização proprietária |
+| GET/PATCH | `/api/v1/organization/adoption-requests/{id?}` | organização proprietária |
+| GET/PATCH | `/api/v1/admin/*` | administrador |
 
-Animal: id (string pública, inclusive se derivada de ObjectId), name, species, sex,
-age, size, city, image, personality (array), description, health (array), status
-(available/adopted), organization_id. Use frontend/src/data/pets.js como referência.
-Dados públicos de ONG: nome, cidade e contato autorizado.
+Use `php artisan route:list --path=api/v1` para consultar a relação completa.
 
-Cadastro: name, city, email, password, password_confirmation, responsible_adoption.
-Login: email, password. O servidor deve validar campos, aplicar hash de senha,
-garantir unicidade do e-mail e limitar tentativas. Erros 422 devem seguir o formato:
+## Configuração
 
-```json
-{"message":"Dados inválidos.","errors":{"email":["E-mail já cadastrado."]}}
+Copie `.env.example`, gere `APP_KEY` e defina ao menos:
+
+```dotenv
+APP_URL=http://localhost:8000
+FRONTEND_URL=http://localhost:5173
+DB_URI=mongodb://127.0.0.1:27017
+DB_DATABASE=adoptplace
+SANCTUM_STATEFUL_DOMAINS=localhost:5173
 ```
 
-## Próximos passos
+Execute `php artisan mongodb:ensure-indexes` em cada novo banco. `php artisan db:seed` é apenas para desenvolvimento e cria a conta `ong@adoptplace.local` com senha `Adoptplace123`; nunca execute esse seed em produção.
 
-1. Validar/atualizar Laravel e PHP; instalar extensão e driver MongoDB compatíveis.
-2. Configurar banco, modelos, índices e validações.
-3. Implementar Sanctum, cookies, bootstrap CSRF, recuperação de senha e logout.
-4. Proteger dashboard no React e endpoints no servidor com autorização por ONG.
-5. Substituir exemplos por serviços, estados de carregamento e erro.
-6. Implementar uploads validados e contato real da organização.
+Para imagens em produção, configure `PET_MEDIA_DISK=s3` e as variáveis AWS/S3. Para notificações assíncronas, troque `QUEUE_CONNECTION=sync` por um driver de fila e mantenha um worker ativo.
 
-O frontend tem cliente HTTP que envia credenciais, mas ainda não gerencia sessão
-nem inicializa CSRF. A flag VITE_AUTH_ENABLED deve permanecer false até concluir
-esse fluxo. O painel atual é uma demonstração pública, sem dados privados.
+## Produção
 
-O Vite encaminha /api e /sanctum para 127.0.0.1:8000, mantendo as chamadas na mesma
-origem. Para implantação entre origens, configurar CORS com credenciais, cookies
-de sessão e domínios stateful do Sanctum conforme a topologia final.
+- Sirva o Laravel por HTTPS e aponte o document root para `backend/public`.
+- Configure `APP_ENV=production`, `APP_DEBUG=false`, MongoDB Atlas com usuário restrito e backup.
+- Se frontend e API estiverem em subdomínios, use o mesmo domínio raiz, ajuste `SESSION_DOMAIN`, `SANCTUM_STATEFUL_DOMAINS`, `FRONTEND_URL` e `SESSION_SECURE_COOKIE=true`.
+- Rode no deploy: `composer install --no-dev --optimize-autoloader`, `php artisan optimize`, `php artisan mongodb:ensure-indexes` e `php artisan storage:link` quando usar disco público.
+- Configure o frontend com `VITE_API_URL=https://api.seudominio.org/api/v1` antes de `npm run build` e fallback SPA para `index.html`.
+- Configure SMTP, monitoramento, rotação de logs, política de retenção/eliminação de dados e termos de privacidade antes de aceitar dados reais.
+
+## Próximas evoluções
+
+Recuperação de senha, confirmação do e-mail por página no frontend, edição completa/fotos no painel, busca geográfica, notificações ao adotante e testes de integração com um MongoDB isolado são extensões previstas. A base atual já separa esses domínios para permitir evolução incremental.

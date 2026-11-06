@@ -7,15 +7,19 @@ use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
-    /**
-     * A basic test example.
-     *
-     * @return void
-     */
-    public function test_the_application_returns_a_successful_response()
+    public function test_health_endpoint_returns_service_status(): void
     {
-        $response = $this->get('/');
+        $response = $this->getJson('/api/health');
 
-        $response->assertStatus(200);
+        $response->assertOk()->assertJson([
+            'status' => 'ok',
+            'service' => 'adoptplace-api',
+        ]);
+    }
+
+    public function test_dashboard_api_requires_authentication(): void
+    {
+        $this->getJson('/api/v1/organization/pets')
+            ->assertUnauthorized();
     }
 }

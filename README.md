@@ -1,11 +1,33 @@
-﻿# AdoptPlace
+# AdoptPlace
 
-Plataforma sem fins lucrativos para conectar animais resgatados a novas famílias.
-React 19 + Vite no frontend, Laravel existente no backend e MongoDB planejado.
+Plataforma sem fins lucrativos para adoção responsável. O projeto usa React 19 + Vite no frontend, Laravel 13 no backend e MongoDB.
 
-## Executar o frontend
+## Funcionalidades
 
-Recomendado Node.js 24. No PowerShell:
+- Catálogo público com filtros, favoritos e perfis de animais.
+- Formulário de interesse em adoção com consentimento de privacidade.
+- Cadastro e login de ONGs/protetores com sessão segura via Sanctum.
+- Painel privado para cadastrar animais, acompanhar status e interesses.
+- Aprovação de organizações, moderação de animais e auditoria administrativa.
+- Upload de imagens em disco local ou armazenamento compatível com S3.
+- Validação, políticas de autorização, rate limits e índices MongoDB.
+
+## Executar localmente
+
+Requisitos: Node.js 24+, PHP 8.3+ com extensão `mongodb`, Composer e MongoDB 7+ (local ou Atlas).
+
+```powershell
+cd backend
+composer install
+Copy-Item .env.example .env
+php artisan key:generate
+# Configure DB_URI e DB_DATABASE no .env
+php artisan mongodb:ensure-indexes
+php artisan db:seed # opcional; cria dados locais demonstrativos
+php artisan serve --host=127.0.0.1 --port=8000
+```
+
+Em outro terminal:
 
 ```powershell
 cd frontend
@@ -14,53 +36,26 @@ Copy-Item .env.example .env
 npm run dev
 ```
 
-Não sobrescreva um .env existente. Abra a URL exibida pelo Vite.
-Build de produção: `npm run build`. Verificação estática: `npm run lint`.
+Não sobrescreva arquivos `.env` existentes. O Vite encaminha `/api` e `/sanctum` ao Laravel. Acesse `http://localhost:5173`.
 
-## Páginas
+## Verificações
 
-- `/`: catálogo com filtros por espécie, porte e cidade; favoritos persistidos no navegador.
-- `/pets/pipoca`, `/pets/luna`, `/pets/thor`: perfis individuais e compartilhamento.
-- `/login` e `/cadastro`: formulários com validação e opção de mostrar senha.
-- `/dashboard`: demonstração de gestão, busca por nome e alteração local de status.
+```powershell
+cd frontend
+npm run lint
+npm run build
 
-Os caminhos antigos .html redirecionam para as novas páginas. Na hospedagem do
-frontend, configurar fallback para index.html nas rotas que não sejam arquivos.
+cd ..\backend
+composer test
+```
 
-## Organização
+## Estrutura
 
-- `frontend/src/pages`: páginas React.
-- `frontend/src/components`: marca, cabeçalho, rodapé, cards e favoritos.
-- `frontend/src/context`: estado compartilhado dos favoritos.
-- `frontend/src/data`: animais demonstrativos.
-- `frontend/src/services/api.js`: cliente HTTP preparado para erros Laravel.
-- `frontend/src/assets/adoptplace-logo.png`: logo original, movido da raiz.
-- `docs/backend.md`: preparação e contrato proposto para o backend.
+- `frontend/src/pages`: catálogo, perfil/adoção, autenticação e painel.
+- `frontend/src/services/api.js`: cliente da API e inicialização CSRF.
+- `backend/app/Http/Controllers/Api/V1`: API pública, privada e administrativa.
+- `backend/app/Models`: documentos MongoDB.
+- `backend/app/Policies`: isolamento dos dados por organização.
+- `docs/backend.md`: endpoints, configuração e implantação.
 
-## Design system
-
-O redesign usa `design-system.html` como fonte visual. A implementação React adota
-a paleta Cream/Ink/Bloom, Manrope para a interface, Fraunces para ênfase editorial,
-JetBrains Mono para metadados, raios de 14/20/28 px e estados de foco, hover e
-movimento reduzido definidos no sistema. A aplicação está em
-`frontend/src/styles-v2.css`; o CSS anterior foi mantido apenas como referência.
-
-Os HTMLs originais foram preservados na raiz como referência. A interface não usa
-Tailwind nem Font Awesome por CDN. Fotos Unsplash e fontes Google precisam de
-conexão; fontes de sistema servem como alternativa.
-
-## Integração
-
-O catálogo e a ONG são fictícios, identificados como demonstração. Alterações do
-painel não persistem e não afetam o catálogo público. Contatos reais aguardam a API.
-
-Login/cadastro validam campos sem criar contas ou sessões e sem guardar senhas.
-`VITE_AUTH_ENABLED=false` impede envio enquanto a API não estiver implementada.
-A flag só deve ser habilitada após concluir autenticação, CSRF e proteção do painel.
-
-O Vite encaminha `/api` e `/sanctum` para `http://127.0.0.1:8000`.
-`VITE_API_URL` permite configurar outra base. Laravel tem `GET /api/health` e CORS
-limitado a FRONTEND_URL. MongoDB ainda não está instalado/configurado: as variáveis
-reservadas e os próximos passos estão em [docs/backend.md](docs/backend.md).
-
-PHP e Composer não foram encontrados neste terminal; o backend não pôde ser validado.
+O redesign parte de `design-system.html`. Os HTMLs originais na raiz permanecem apenas como referência visual.
