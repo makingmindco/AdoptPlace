@@ -15,6 +15,7 @@ class OrganizationResource extends JsonResource
         return [
             'id' => (string) $this->id,
             'name' => $this->name,
+            'document' => $this->when($request->user()?->isAdmin(), $this->document),
             'slug' => $this->slug,
             'type' => $this->type,
             'description' => $this->description,

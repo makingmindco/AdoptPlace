@@ -14,7 +14,7 @@ class AdoptionRequestPolicy
 
     public function view(User $user, AdoptionRequest $adoptionRequest): bool
     {
-        return (string) $user->organization_id === (string) $adoptionRequest->organization_id;
+        return $user->organization_id && (string) $user->organization_id === (string) $adoptionRequest->organization_id;
     }
 
     public function update(User $user, AdoptionRequest $adoptionRequest): bool

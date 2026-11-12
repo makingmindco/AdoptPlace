@@ -10,4 +10,5 @@ enum AdoptionRequestStatus: string
     case Approved = 'approved';
     case Rejected = 'rejected';
     case Withdrawn = 'withdrawn';
+    case Completed = 'completed';
 }

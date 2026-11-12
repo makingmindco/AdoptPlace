@@ -76,6 +76,7 @@ class OrganizationPetController extends Controller
 
     public function publish(Request $request, Pet $pet, AuditService $audit): PetResource
     {
+        abort_unless($request->user()->hasVerifiedEmail(), 403, 'Confirme seu e-mail em Minha conta antes de publicar animais.');
         $this->authorize('update', $pet);
 
         if (! $pet->cover_photo) {

@@ -16,7 +16,7 @@ class AdoptionRequest extends Model
 
     protected $fillable = [
         'pet_id', 'organization_id', 'adopter', 'privacy_consent_at', 'status',
-        'internal_notes', 'status_history',
+        'internal_notes', 'status_history', 'user_id', 'review',
     ];
 
     protected $hidden = ['internal_notes'];

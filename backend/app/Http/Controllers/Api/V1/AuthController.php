@@ -61,6 +61,7 @@ class AuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $request->session()->put('account_version', Auth::user()->session_version);
         // A mail outage must not turn an already-created account into a failed registration.
         try {
             $user->sendEmailVerificationNotification();
@@ -82,6 +83,7 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+        $request->session()->put('account_version', Auth::user()->session_version);
         $user = $request->user();
 
         if ($user->status !== 'active') {
