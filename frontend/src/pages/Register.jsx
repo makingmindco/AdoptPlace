@@ -137,7 +137,7 @@ export default function Register() {
             {field('name', 'Seu nome completo', { required: true, maxLength: 120, autoComplete: 'name' })}
             <div className="register-grid">{field('email', 'E-mail', { type: 'email', required: true, maxLength: 254, autoComplete: 'email' })}{field('phone', 'Telefone com DDD', { type: 'tel', required: true, minLength: 10, maxLength: 25, autoComplete: 'tel', placeholder: '(11) 99999-9999' })}</div>
             <div className="field"><label htmlFor="register-password">Crie sua senha</label><div className="password-input">
-              <input id="register-password" name="password" value={values.password} onChange={event => update('password', event.target.value)} type={showPassword ? 'text' : 'password'} required minLength={10} autoComplete="new-password" aria-describedby="password-requirements" />
+              <input id="register-password" name="password" value={values.password} onChange={event => update('password', event.target.value)} type={showPassword ? 'text' : 'password'} required minLength={8} autoComplete="new-password" aria-describedby="password-requirements" />
               <button type="button" aria-pressed={showPassword} onClick={() => setShowPassword(value => !value)}>{showPassword ? 'Ocultar' : 'Mostrar'}</button>
             </div></div>
             <PasswordStrength password={values.password} />

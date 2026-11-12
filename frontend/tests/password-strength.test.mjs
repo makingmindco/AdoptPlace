@@ -7,6 +7,8 @@ test('password requirements agree with registration policy', () => {
     assert.equal(passwordStrength(value).valid, false, value)
   }
   assert.equal(passwordStrength('Encontro#123').valid, true)
+  assert.equal(passwordStrength('Amigo#12').valid, true)
+  assert.equal(passwordStrength('Amigo#1').valid, false)
   assert.equal(passwordStrength('Encontro#123').label, 'Boa')
   assert.equal(passwordStrength('MeuEncontro#12345').label, 'Forte')
   assert.equal(passwordStrength('AdoçãoFeliz#123').valid, true)

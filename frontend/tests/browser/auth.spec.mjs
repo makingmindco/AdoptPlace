@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 async function mockApi(page, options = {}) {
+  await page.route('https://viacep.com.br/**', route => route.fulfill({ status: 503, json: {} }))
   let user = options.user || null
   await page.route('**/sanctum/csrf-cookie', route => route.fulfill({ status: 204 }))
   await page.route('**/api/v1/**', async route => {

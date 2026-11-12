@@ -1,3 +1,4 @@
+import { lookupAddress } from './address'
 const apiBase = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '')
 const backendOrigin = new URL(apiBase, window.location.origin).origin
 
@@ -47,7 +48,7 @@ async function authenticatedMutation(path, options) {
 const unwrap = payload => payload?.data ?? payload
 
 export const api = {
-  address: (cep, options) => request(`/address/cep/${encodeURIComponent(cep)}`, options),
+  address: (cep, options) => lookupAddress(cep, request, options),
   pets: params => request(`/pets?${new URLSearchParams(params || {})}`),
   pet: slug => request(`/pets/${slug}`).then(unwrap),
   adoptionRequest: (petId, body) => request(`/pets/${petId}/adoption-requests`, { method: 'POST', body }),

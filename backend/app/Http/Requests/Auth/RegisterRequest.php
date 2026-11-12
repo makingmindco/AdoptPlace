@@ -59,7 +59,7 @@ class RegisterRequest extends FormRequest
             'email.unique' => 'Este e-mail já está cadastrado. Entre na sua conta.',
             'cnpj.unique' => 'Este CNPJ já está cadastrado.',
             'password.confirmed' => 'As senhas precisam ser iguais.',
-            'password.min' => 'Use uma senha com pelo menos 10 caracteres.',
+            'password.min' => 'Use uma senha com pelo menos 8 caracteres.',
             'password.mixed' => 'Inclua letras maiúsculas e minúsculas na senha.',
             'password.numbers' => 'Inclua um número na senha.',
             'password.symbols' => 'Inclua um símbolo na senha.',

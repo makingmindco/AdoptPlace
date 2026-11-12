@@ -54,7 +54,7 @@ Recuperação de senha, interface de reenvio da confirmação de e-mail, ediçã
 
 ## Cadastro por perfil — primeira etapa do marketplace
 
-O login fica em `/login` e o cadastro em `/cadastro`. O cadastro tem três passos: tipo de perfil, credenciais e localização/apresentação. O indicador de senha exige pelo menos 10 caracteres, maiúscula, minúscula, número e símbolo. A política vale para novos cadastros; senhas de contas existentes continuam funcionando no login.
+O login fica em `/login` e o cadastro em `/cadastro`. O cadastro tem três passos: tipo de perfil, credenciais e localização/apresentação. O indicador de senha exige pelo menos 8 caracteres, maiúscula, minúscula, número e símbolo. A política vale para novos cadastros; senhas de contas existentes continuam funcionando no login.
 
 | `account_type` | Papel salvo no usuário | Organização | Destino após entrar |
 | --- | --- | --- | --- |

@@ -1,6 +1,6 @@
 export function passwordStrength(password) {
   const rules = [
-    { label: '10 caracteres ou mais', met: [...password].length >= 10 },
+    { label: '8 caracteres ou mais', met: [...password].length >= 8 },
     { label: 'Uma letra maiúscula', met: /\p{Lu}/u.test(password) },
     { label: 'Uma letra minúscula', met: /\p{Ll}/u.test(password) },
     { label: 'Um número', met: /\p{N}/u.test(password) },
