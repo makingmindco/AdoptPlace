@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Brand } from './Layout'
 import '../panel.css'
@@ -11,12 +11,19 @@ export function PanelIcon({ name = 'grid' }) {
 
 export default function PanelShell({ title, subtitle, children, action }) {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const admin = user?.role === 'admin'
   async function signOut() {
     setBusy(true)
-    try { await logout() } catch { setError('Não foi possível sair. Tente novamente.'); setBusy(false) }
+    try {
+      await logout()
+      navigate('/login', { replace: true, state: null })
+    } catch {
+      setError('Não foi possível sair. Tente novamente.')
+      setBusy(false)
+    }
   }
   return <div className="workspace">
     <aside className="workspace-sidebar"><Brand /><span className="workspace-label">{admin ? 'CENTRAL DE SUPORTE' : 'SEU ESPAÇO'}</span>
@@ -24,10 +31,10 @@ export default function PanelShell({ title, subtitle, children, action }) {
         {admin && <NavLink to="/administracao"><PanelIcon name="shield" />Administração</NavLink>}
         {!admin && user?.role !== 'adopter' && <NavLink to="/dashboard"><PanelIcon />Painel da organização</NavLink>}
         <NavLink to="/minha-conta"><PanelIcon name="person" />Minha conta</NavLink>
-        <Link to="/#catalogo"><PanelIcon name="heart" />Catálogo de animais<PanelIcon name="arrow" /></Link>
+        <Link to="/animais"><PanelIcon name="heart" />Catálogo de animais<PanelIcon name="arrow" /></Link>
       </nav>
       <div className="workspace-help"><PanelIcon name="heart" /><strong>Cada cuidado importa.</strong><p>{admin ? 'Seu trabalho mantém os encontros seguros e a comunidade acolhedora.' : 'Um espaço para acompanhar encontros que transformam vidas.'}</p></div>
-      <div className="workspace-user"><span className="workspace-avatar">{user?.name?.slice(0, 1).toUpperCase()}</span><div><strong>{user?.name}</strong><small>{admin ? 'Administrador' : user?.role === 'adopter' ? 'Adotante' : 'Organização / protetor'}</small></div><button type="button" onClick={signOut} disabled={busy} aria-label="Sair da conta"><PanelIcon name="exit" /></button></div>
+      <div className="workspace-user"><span className="workspace-avatar">{user?.name?.slice(0, 1).toUpperCase()}</span><div><strong>{user?.name}</strong><small>{admin ? 'Administrador' : user?.role === 'adopter' ? 'Adotante' : 'Organização / protetor'}</small></div><button type="button" onClick={signOut} disabled={busy} aria-label="Sair da conta"><PanelIcon name="exit" /><span className="workspace-signout-label">{busy ? 'Saindo…' : 'Sair'}</span></button></div>
     </aside>
     <div className="workspace-body"><div className="workspace-topbar"><span>AdoptPlace <span>/</span> {admin ? 'Gestão da plataforma' : 'Área pessoal'}</span><Link to="/">Visitar plataforma <PanelIcon name="arrow" /></Link></div>
       <main id="main" className="workspace-main"><header className="workspace-heading"><div><span className="workspace-label">{admin ? 'CUIDADO QUE CONECTA' : 'SEUS PRÓXIMOS ENCONTROS'}</span><h1>{title}</h1><p>{subtitle}</p></div>{action}</header>{error && <p role="alert" className="workspace-feedback">{error}</p>}{children}</main>

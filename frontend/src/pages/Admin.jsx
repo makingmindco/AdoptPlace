@@ -7,9 +7,9 @@ import PanelShell, { PanelIcon } from '../components/PanelShell'
 
 const statusLabels = { pending: 'Em análise', approved: 'Aprovada', rejected: 'Não aprovada', suspended: 'Suspensa' }
 export default function Admin() {
-  const { user, loading } = useAuth()
+  const { user, loading, loggingOut } = useAuth()
   if (loading) return <main className="container empty">Carregando…</main>
-  if (!user) return <Navigate to="/login" replace state={{ from: '/administracao' }} />
+  if (!user) return <Navigate to="/login" replace state={loggingOut ? null : { from: '/administracao' }} />
   if (user.role !== 'admin') return <Navigate to="/" replace />
   return <Moderation />
 }

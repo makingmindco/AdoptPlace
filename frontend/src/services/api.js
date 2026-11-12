@@ -57,7 +57,14 @@ export const api = {
   reviews: (slug, page = 1) => request(`/organizations/${encodeURIComponent(slug)}/reviews?page=${page}`),
   forgotPassword: body => authenticatedMutation('/auth/forgot-password', { method: 'POST', body }),
   resetPassword: body => authenticatedMutation('/auth/reset-password', { method: 'POST', body }),
-  resendVerification: () => request('/auth/email/verification-notification', { method: 'POST' }),
+  resendVerification: () => request('/auth/email/verification-notification', { method: 'POST' }).catch(error => {
+    if (error?.status === 503) {
+      const friendly = new Error('Não foi possível enviar o e-mail de confirmação no momento. Tente novamente em instantes.')
+      friendly.status = 503
+      throw friendly
+    }
+    throw error
+  }),
   adminOrganizations: (page = 1) => request(`/admin/organizations?page=${page}`),
   moderateOrganization: (id, body) => request(`/admin/organizations/${id}/status`, { method: 'PATCH', body }),
   adminReviews: (page = 1, status = 'pending') => request(`/admin/reviews?page=${page}&status=${status}`),
@@ -65,7 +72,12 @@ export const api = {
   publicOrganization: slug => request(`/organizations/${encodeURIComponent(slug)}`).then(unwrap),
   publicOrganizationPets: (slug, page = 1) => request(`/organizations/${encodeURIComponent(slug)}/pets?page=${page}`),
   address: (cep, options) => lookupAddress(cep, request, options),
-  pets: params => request(`/pets?${new URLSearchParams(params || {})}`),
+  pets: params => {
+    const query = new URLSearchParams(
+      Object.entries(params || {}).filter(([, value]) => value !== undefined && value !== null && value !== '')
+    ).toString()
+    return request(query ? `/pets?${query}` : '/pets')
+  },
   pet: slug => request(`/pets/${slug}`).then(unwrap),
   adoptionRequest: (petId, body) => request(`/pets/${petId}/adoption-requests`, { method: 'POST', body }),
   login: body => authenticatedMutation('/auth/login', { method: 'POST', body }).then(unwrap),
@@ -74,13 +86,21 @@ export const api = {
   me: () => request('/auth/me').then(unwrap),
   organization: () => request('/organization').then(unwrap),
   updateOrganization: body => request('/organization', { method: 'PATCH', body }).then(unwrap),
-  organizationPets: () => request('/organization/pets'),
+  organizationPets: params => {
+    const query = new URLSearchParams(
+      Object.entries(params || {}).filter(([, value]) => value !== undefined && value !== null && value !== '')
+    ).toString()
+    return request(query ? `/organization/pets?${query}` : '/organization/pets')
+  },
+  organizationPet: id => request(`/organization/pets/${id}`).then(unwrap),
   createPet: body => request('/organization/pets', { method: 'POST', body }).then(unwrap),
   updatePet: (id, body) => request(`/organization/pets/${id}`, { method: 'PATCH', body }).then(unwrap),
   deletePet: id => request(`/organization/pets/${id}`, { method: 'DELETE' }),
   publishPet: id => request(`/organization/pets/${id}/publish`, { method: 'POST' }).then(unwrap),
   markAdopted: id => request(`/organization/pets/${id}/mark-adopted`, { method: 'POST' }).then(unwrap),
   uploadPetPhoto: (id, body) => request(`/organization/pets/${id}/photos`, { method: 'POST', body }).then(unwrap),
+  setPetCoverPhoto: (id, photoId) => request(`/organization/pets/${id}/photos/${encodeURIComponent(photoId)}`, { method: 'PATCH' }).then(unwrap),
+  deletePetPhoto: (id, photoId) => request(`/organization/pets/${id}/photos/${encodeURIComponent(photoId)}`, { method: 'DELETE' }).then(unwrap),
   adoptionRequests: (page = 1) => request(`/organization/adoption-requests?page=${page}`),
   updateAdoptionRequest: (id, body) => request(`/organization/adoption-requests/${id}`, { method: 'PATCH', body }),
 }

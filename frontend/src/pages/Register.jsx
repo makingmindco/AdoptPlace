@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { resolvePostAuthDestination, useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import { FormAlert, SubmitButton } from '../components/AuthControls'
 import PasswordStrength from '../components/PasswordStrength'
@@ -23,6 +23,7 @@ function Field({ label, error, name, children, ...props }) {
 export default function Register() {
   const auth = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [step, setStep] = useState(1)
   const [values, setValues] = useState({ account_type: 'adopter', name: '', email: '', phone: '', password: '', password_confirmation: '', provider_name: '', description: '', has_cnpj: false, cnpj: '', terms: false, responsible_adoption: false })
   const [address, setAddress] = useState({ cep: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' })
@@ -34,10 +35,17 @@ export default function Register() {
   const [cepMessage, setCepMessage] = useState('')
   const cepRequest = useRef(null)
   const heading = useRef(null)
+  const initialStepRender = useRef(true)
   const provider = values.account_type !== 'adopter'
   const type = accountTypes.find(item => item.value === values.account_type)
 
-  useEffect(() => { heading.current?.focus() }, [step])
+  useEffect(() => {
+    if (initialStepRender.current) {
+      initialStepRender.current = false
+      return
+    }
+    heading.current?.focus()
+  }, [step])
   useEffect(() => () => cepRequest.current?.abort(), [])
 
   const update = (name, value) => {
@@ -101,7 +109,7 @@ export default function Register() {
     setErrors({})
     try {
       const user = await auth.register({ ...values, address })
-      navigate(user.role === 'adopter' ? '/#catalogo' : '/dashboard', { replace: true })
+      navigate(resolvePostAuthDestination(user, location.state?.from), { replace: true })
     } catch (error) {
       setErrors(error.errors || {})
       setMessage(Object.values(error.errors || {}).flat().join(' ') || error.message)
@@ -111,11 +119,11 @@ export default function Register() {
     }
   }
 
-  if (auth.user) return <Navigate to={auth.user.role === 'adopter' ? '/#catalogo' : '/dashboard'} replace />
+  if (auth.user && !busy) return <Navigate to={resolvePostAuthDestination(auth.user, location.state?.from)} replace />
 
   return <main id="main" className="register-page container">
     <aside className="register-story">
-      <Link to="/login" className="text-link">← Voltar para entrar</Link>
+      <Link to="/login" state={location.state} className="text-link">← Voltar para entrar</Link>
       <span className="eyebrow">FAÇA PARTE DESSA HISTÓRIA</span>
       <h1>Um pequeno passo.<br /><span>Um novo começo.</span></h1>
       <p>Adotar, acolher, cuidar. Seja qual for o seu papel, existe um lugar para você aqui.</p>

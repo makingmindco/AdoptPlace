@@ -10,6 +10,7 @@ import { FavoritesProvider } from "./context/FavoritesContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Header, Footer } from "./components/Layout";
 import Home from "./pages/Home";
+import Catalog from "./pages/Catalog";
 import PetDetail from "./pages/PetDetail";
 import Auth from "./pages/Auth";
 import Register from "./pages/Register";
@@ -33,12 +34,12 @@ function ScrollToTop() {
   return null;
 }
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user, loading, loggingOut } = useAuth();
   const location = useLocation();
   if (loading) return <main className="container empty"><p>Carregando seu portal…</p></main>;
-  if (user?.role === 'adopter') return <Navigate to="/#catalogo" replace />;
+  if (user?.role === 'adopter') return <Navigate to="/animais" replace />;
   if (user?.role === 'admin') return <Navigate to="/administracao" replace />;
-  return user ? children : <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  return user ? children : <Navigate to="/login" replace state={loggingOut ? null : { from: `${location.pathname}${location.search}` }} />;
 }
 export default function App() {
   return (
@@ -49,6 +50,8 @@ export default function App() {
         <Header />
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/animais" element={<Catalog />} />
+          <Route path="/catalogo" element={<Navigate to="/animais" replace />} />
           <Route path="/pets/:id" element={<PetDetail />} />
           <Route path="/organizacoes/:slug" element={<Organization />} />
           <Route path="/login" element={<Auth key="login" />} />

@@ -1,37 +1,48 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { pets } from "../data/pets";
 import PetCard from "../components/PetCard";
-import { useFavorites } from "../context/FavoritesContext";
 import { api } from "../services/api";
+
 const initialFilters = { species: "", size: "", city: "" };
+
 export default function Home() {
-  const [catalog, setCatalog] = useState([]);
+  const navigate = useNavigate();
+  const [featuredPets, setFeaturedPets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [catalogMessage, setCatalogMessage] = useState("");
   const [draft, setDraft] = useState(initialFilters);
-  const [filters, setFilters] = useState(initialFilters);
-  const [onlyFavorites, setOnlyFavorites] = useState(false);
-  const { favorites } = useFavorites();
+
   useEffect(() => {
-    api.pets({ per_page: 48 })
-      .then((response) => setCatalog(response.data || []))
-      .catch((error) => setCatalogMessage(error.message));
+    let active = true;
+    api.pets({ featured: 1, per_page: 6 })
+      .then((response) => {
+        if (active) setFeaturedPets(response.data || []);
+      })
+      .catch((error) => {
+        if (active) setCatalogMessage(error.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
-  const normalize = (value) =>
-    value
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim();
-  const visible = catalog.filter(
-    (pet) =>
-      (!filters.species || pet.species === filters.species) &&
-      (!filters.size || pet.size === filters.size) &&
-      normalize(pet.location?.city || pet.city || "").includes(normalize(filters.city)) &&
-      (!onlyFavorites || favorites.includes(pet.id)),
-  );
+
   const update = (event) =>
     setDraft({ ...draft, [event.target.name]: event.target.value });
+
+  function handleSearch(event) {
+    event.preventDefault();
+    const params = new URLSearchParams();
+    if (draft.species) params.set("species", draft.species);
+    if (draft.size) params.set("size", draft.size);
+    if (draft.city.trim()) params.set("city", draft.city.trim());
+    const query = params.toString();
+    navigate(query ? `/animais?${query}` : "/animais");
+  }
+
   return (
     <main id="main">
       <section className="hero">
@@ -54,9 +65,9 @@ export default function Home() {
               que pode mudar a história de vocês.
             </p>
             <div className="hero-actions">
-              <a href="#catalogo" className="button">
+              <Link to="/animais" className="button">
                 Encontre seu amigo <span aria-hidden="true">↗</span>
-              </a>
+              </Link>
               <a
                 href="#como-funciona"
                 className="button button-outline button-pill"
@@ -69,7 +80,7 @@ export default function Home() {
                 ♡
               </span>
               <span>
-                Uma plataforma gratuita para adoção responsável.
+                Uma plataforma gratuita para adoção responsável.{" "}
                 <br />
                 <strong>Feita para aproximar, informar e acolher.</strong>
               </span>
@@ -81,6 +92,10 @@ export default function Home() {
                 src={pets[0].image}
                 alt="Cachorrinho curioso aproveitando o ar livre"
                 fetchPriority="high"
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = "/demo-pets/pipoca.png";
+                }}
               />
               <span className="image-index">AMIGO · 01</span>
             </div>
@@ -99,22 +114,14 @@ export default function Home() {
         </div>
       </section>
       <section className="container search-section" aria-label="Buscar animais">
-        <form
-          className="search-bar"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setFilters(draft);
-            document
-              .getElementById("catalogo")
-              .scrollIntoView({ behavior: "smooth" });
-          }}
-        >
+        <form className="search-bar" onSubmit={handleSearch}>
           <label>
             <span>QUEM VOCÊ PROCURA?</span>
             <select name="species" value={draft.species} onChange={update}>
               <option value="">Todos os bichinhos</option>
               <option value="dog">Cachorro</option>
               <option value="cat">Gato</option>
+              <option value="other">Outro</option>
             </select>
           </label>
           <label>
@@ -144,7 +151,7 @@ export default function Home() {
         <div className="section-heading">
           <div>
             <span className="eyebrow">
-              <i /> CONEXÕES DE VERDADE
+              <i /> ANIMAIS EM DESTAQUE
             </span>
             <h2>
               Pequenas patas.
@@ -155,45 +162,45 @@ export default function Home() {
               Cada um tem uma história. Que tal fazer parte do próximo capítulo?
             </p>
           </div>
-          <button
-            className={`button button-outline button-pill ${onlyFavorites ? "is-active" : ""}`}
-            aria-pressed={onlyFavorites}
-            onClick={() => setOnlyFavorites(!onlyFavorites)}
-          >
-            ♡ Favoritos ({favorites.length})
-          </button>
+          <Link to="/animais" className="button button-outline button-pill">
+            Ver todos os animais <span aria-hidden="true">↗</span>
+          </Link>
         </div>
         <div className="catalog-meta">
           <span aria-live="polite">
-            {visible.length}{" "}
-            {visible.length === 1 ? "amigo disponível" : "amigos disponíveis"}
+            {loading
+              ? "Carregando destaques…"
+              : `${featuredPets.length} ${featuredPets.length === 1 ? "animal em destaque" : "animais em destaque"}`}
           </span>
           <span className="demo-label">Animais cadastrados por organizações parceiras</span>
         </div>
-        {visible.length ? (
-          <div className="pet-grid">
-            {visible.map((pet) => (
-              <PetCard key={pet.id} pet={pet} />
-            ))}
+        {loading ? (
+          <div className="empty" role="status">
+            <p>Buscando bichinhos que esperam por um lar…</p>
           </div>
+        ) : featuredPets.length ? (
+          <>
+            <div className="pet-grid">
+              {featuredPets.map((pet) => (
+                <PetCard key={pet.id} pet={pet} />
+              ))}
+            </div>
+            <div className="catalog-cta">
+              <Link to="/animais" className="button">
+                Ver todos os animais <span aria-hidden="true">↗</span>
+              </Link>
+            </div>
+          </>
         ) : (
           <div className="empty">
             <span className="empty-heart">♡</span>
-            <h3>Ainda não encontramos um amigo por aqui.</h3>
+            <h3>Novos amigos chegarão em breve.</h3>
             <p>
-              Tente outra cidade ou ajuste os filtros para conhecer mais
-              bichinhos.
+              Explore o catálogo completo para consultar todas as opções disponíveis.
             </p>
-            <button
-              className="button"
-              onClick={() => {
-                setFilters(initialFilters);
-                setDraft(initialFilters);
-                setOnlyFavorites(false);
-              }}
-            >
-              Limpar filtros
-            </button>
+            <Link to="/animais" className="button">
+              Ver todos os animais
+            </Link>
           </div>
         )}
         {catalogMessage && <p className="feedback" role="status">{catalogMessage}</p>}
@@ -251,11 +258,11 @@ export default function Home() {
               <i /> JUNTOS, A GENTE VAI MAIS LONGE
             </span>
             <h2>
-              Você cuida.
+              Você cuida.{" "}
               <br />A gente ajuda a <span className="serif-em">conectar.</span>
             </h2>
             <p>
-              Um espaço gratuito para ONGs e protetores encontrarem
+              Um espaço gratuito para ONGs e protetores encontrarem{" "}
               <br />
               famílias para os animais que acolhem.
             </p>

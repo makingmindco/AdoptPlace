@@ -12,30 +12,61 @@ export function FavoritesProvider({ children }) {
 function FavoritesState({ user, children }) {
   const [favorites, setFavorites] = useState(() => user ? [] : guestFavorites())
   const [ready, setReady] = useState(!user)
+  const [revision, setRevision] = useState(0)
   const [error, setError] = useState('')
   const pending = useRef(new Set())
+  const favoritesRef = useRef(favorites)
+  const initPromiseRef = useRef(null)
+
+  useEffect(() => {
+    favoritesRef.current = favorites
+  }, [favorites])
+
   useEffect(() => {
     if (!user) return
     let active = true
-    api.favorites().then(items => { if (active) { setFavorites(items); setReady(true) } }).catch(() => { if (active) setError('Não foi possível carregar seus favoritos. Atualize a página para tentar novamente.') })
+    const loadPromise = api.favorites()
+      .then(items => {
+        const normalized = Array.isArray(items) ? items : []
+        if (active) {
+          favoritesRef.current = normalized
+          setFavorites(normalized)
+          setReady(true)
+        }
+        return normalized
+      })
+      .catch(() => {
+        if (active) {
+          setError('Não foi possível carregar seus favoritos. Atualize a página para tentar novamente.')
+          setReady(true)
+        }
+        return []
+      })
+    initPromiseRef.current = loadPromise
     return () => { active = false }
   }, [user])
+
   async function toggle(id) {
-    if (!ready || pending.current.has(id)) return
+    if (pending.current.has(id)) return
     pending.current.add(id)
-    const selected = !favorites.includes(id)
     try {
+      if (!ready && initPromiseRef.current) {
+        await initPromiseRef.current
+      }
+      const selected = !favoritesRef.current.includes(id)
       if (user) await api.saveFavorite(id, selected)
       setFavorites(previous => {
         const next = selected ? [...new Set([...previous, id])] : previous.filter(item => item !== id)
+        favoritesRef.current = next
         if (!user) { try { localStorage.setItem('adoptplace:favorites', JSON.stringify(next)) } catch { /* in-memory fallback */ } }
         return next
       })
+      setRevision(value => value + 1)
       setError('')
     } catch { setError('Não foi possível salvar o favorito. Tente novamente.') }
     finally { pending.current.delete(id) }
   }
-  return <FavoritesContext.Provider value={{ favorites, toggle, ready }}>
+  return <FavoritesContext.Provider value={{ favorites, toggle, ready, revision }}>
     {error && <p className="container form-alert" role="alert">{error}</p>}{children}
   </FavoritesContext.Provider>
 }

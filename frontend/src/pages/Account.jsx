@@ -8,25 +8,47 @@ import PanelShell, { PanelIcon } from '../components/PanelShell'
 
 const statuses = { new: 'Interesse enviado', reviewing: 'Em análise', contacted: 'Em contato', approved: 'Aprovada — confirme após receber o animal', completed: 'Adoção concluída', rejected: 'Não aprovada', withdrawn: 'Cancelada por você' }
 export default function Account() {
-  const { user, loading } = useAuth()
+  const { user, loading, loggingOut, refreshUser } = useAuth()
   if (loading) return <main className="container empty">Carregando sua conta…</main>
-  if (!user) return <Navigate to="/login" state={{ from: '/minha-conta' }} replace />
-  return <AccountContent user={user} />
+  if (!user) return <Navigate to="/login" state={loggingOut ? null : { from: '/minha-conta' }} replace />
+  return <AccountContent user={user} refreshUser={refreshUser} />
 }
-function AccountContent({ user }) {
-  const { favorites } = useFavorites()
+function AccountContent({ user, refreshUser }) {
+  const { revision: favoritesRevision } = useFavorites()
   const [pets, setPets] = useState({ data: [], meta: {} })
   const [adoptions, setAdoptions] = useState({ data: [], meta: {} })
   const [page, setPage] = useState(1)
   const [petPage, setPetPage] = useState(1)
   const [version, setVersion] = useState(0)
+  const [loadedAdoptionsKey, setLoadedAdoptionsKey] = useState('')
+  const [loadedPetsKey, setLoadedPetsKey] = useState('')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const adoptionsKey = `${page}:${version}`
+  const petsKey = `${petPage}:${favoritesRevision}`
+  const adoptionsLoading = loadedAdoptionsKey !== adoptionsKey
+  const petsLoading = loadedPetsKey !== petsKey
+  useEffect(() => {
+    if (!user.email_verified_at && refreshUser) {
+      refreshUser({ force: false })
+    }
+  }, [user.email_verified_at, refreshUser])
   useEffect(() => {
     let active = true
-    Promise.all([api.favoritePets(petPage), api.myAdoptions(page)]).then(([p, a]) => { if (active) { setPets(p); setAdoptions(a) } }).catch(error => { if (active) setMessage(error.message) })
+    api.myAdoptions(page)
+      .then(result => { if (active) setAdoptions(result) })
+      .catch(error => { if (active) setMessage(error.message) })
+      .finally(() => { if (active) setLoadedAdoptionsKey(adoptionsKey) })
     return () => { active = false }
-  }, [page, petPage, version, favorites])
+  }, [page, version, adoptionsKey])
+  useEffect(() => {
+    let active = true
+    api.favoritePets(petPage)
+      .then(result => { if (active) setPets(result) })
+      .catch(error => { if (active) setMessage(error.message) })
+      .finally(() => { if (active) setLoadedPetsKey(petsKey) })
+    return () => { active = false }
+  }, [petPage, favoritesRevision, petsKey])
   async function action(operation) {
     setBusy(true); setMessage('')
     try { const result = await operation(); setMessage(result?.message || 'Atualizado com sucesso.'); setVersion(value => value + 1) } catch (error) { setMessage(Object.values(error.errors || {}).flat().join(' ') || error.message) } finally { setBusy(false) }
@@ -34,15 +56,24 @@ function AccountContent({ user }) {
   return <PanelShell title="Minha conta" subtitle={`Olá, ${user.name}. Acompanhe seus encontros e os animais que conquistaram seu coração.`}>
     {!user.email_verified_at && <div className="account-verification"><span className="metric-icon"><PanelIcon name="shield" /></span><div><strong>Vamos confirmar seu e-mail?</strong><p>Confira o link enviado para sua caixa de entrada.</p></div><button className="button button-outline" disabled={busy} onClick={() => action(api.resendVerification)}>Reenviar confirmação</button></div>}
     <p role="status" className="feedback">{message}</p>
-    <section className="workspace-section"><div className="workspace-section-heading"><div><h2>Minhas adoções</h2><p>Cada etapa de um novo começo, em um só lugar.</p></div><span className="workspace-badge">Acompanhamento</span></div>{!adoptions.data.length && <div className="workspace-empty"><PanelIcon name="heart" /><strong>Uma nova história pode começar aqui</strong><p>Você ainda não enviou solicitações.</p><Link className="button button-outline" to="/#catalogo">Conheça os animais disponíveis</Link></div>}
-      {adoptions.data.map(item => <article key={item.id} className="adoption-item"><h3>{item.pet?.name || 'Animal indisponível'}</h3><p><strong>{statuses[item.status] || item.status}</strong></p>
-        {item.pet?.organization && <Link to={`/organizacoes/${item.pet.organization.slug}`}>{item.pet.organization.name} ↗</Link>}
-        {item.status === 'approved' && <button className="button" disabled={busy} onClick={() => { if (window.confirm('Você já recebeu o animal e deseja confirmar a adoção?')) action(() => api.adoptionAction(item.id, 'confirm')) }}>Recebi o animal: confirmar adoção</button>}
-        {['new', 'reviewing', 'contacted', 'approved'].includes(item.status) && <button className="button button-outline" disabled={busy} onClick={() => { if (window.confirm('Deseja cancelar esta solicitação de adoção?')) action(() => api.adoptionAction(item.id, 'withdraw')) }}>Cancelar solicitação</button>}
-        {item.status === 'completed' && (item.review ? <p>Avaliação enviada · {item.review.status === 'published' ? 'Publicada' : item.review.status === 'hidden' ? 'Não publicada' : 'Aguardando moderação'}</p> : <ReviewForm busy={busy} onSave={body => action(() => api.review(item.id, body))} />)}
-      </article>)}<Pagination page={page} meta={adoptions.meta} onChange={setPage} />
+    <section className="workspace-section"><div className="workspace-section-heading"><div><h2>Minhas adoções</h2><p>Cada etapa de um novo começo, em um só lugar.</p></div><span className="workspace-badge">Acompanhamento</span></div>
+      {adoptionsLoading && !adoptions.data.length && <p className="workspace-empty" role="status">Carregando suas solicitações…</p>}
+      {!adoptionsLoading && !adoptions.data.length && <div className="workspace-empty"><PanelIcon name="heart" /><strong>Uma nova história pode começar aqui</strong><p>Você ainda não enviou solicitações.</p><Link className="button button-outline" to="/animais">Conheça os animais disponíveis</Link></div>}
+      {adoptions.data.map(item => {
+        const lastReason = item.status_history?.at?.(-1)?.reason
+        return <article key={item.id} className="adoption-item"><h3>{item.pet?.name || 'Animal indisponível'}</h3><p><strong>{statuses[item.status] || item.status}</strong></p>
+          {item.status === 'approved' && <p className="small muted">Animal reservado para você. Confirme abaixo somente após receber o animal.</p>}
+          {lastReason && ['rejected', 'withdrawn'].includes(item.status) && <p className="small muted">{lastReason}</p>}
+          {item.pet?.organization && <Link to={`/organizacoes/${item.pet.organization.slug}`}>{item.pet.organization.name} ↗</Link>}
+          {item.status === 'approved' && <button className="button" disabled={busy} onClick={() => { if (window.confirm('Você já recebeu o animal e deseja confirmar a adoção?')) action(() => api.adoptionAction(item.id, 'confirm')) }}>Recebi o animal: confirmar adoção</button>}
+          {['new', 'reviewing', 'contacted', 'approved'].includes(item.status) && <button className="button button-outline" disabled={busy} onClick={() => { if (window.confirm('Deseja cancelar esta solicitação de adoção?')) action(() => api.adoptionAction(item.id, 'withdraw')) }}>Cancelar solicitação</button>}
+          {item.status === 'completed' && (item.review ? <p>Avaliação enviada · {item.review.status === 'published' ? 'Publicada' : item.review.status === 'hidden' ? 'Não publicada' : 'Aguardando moderação'}</p> : <ReviewForm busy={busy} onSave={body => action(() => api.review(item.id, body))} />)}
+        </article>
+      })}<Pagination page={page} meta={adoptions.meta} onChange={setPage} />
     </section>
-    <section className="workspace-section"><div className="workspace-section-heading"><div><h2>Meus favoritos</h2><p>Salvos na sua conta, prontos para um novo encontro.</p></div><PanelIcon name="heart" /></div><div className="pet-grid">{pets.data.map(pet => <PetCard key={pet.id} pet={pet} />)}</div>{!pets.data.length && <div className="workspace-empty"><PanelIcon name="heart" /><strong>Aquele encontro que fica no coração</strong><p>Nenhum animal disponível nos seus favoritos.</p><Link to="/#catalogo" className="text-link">Explorar o catálogo ↗</Link></div>}<Pagination page={petPage} meta={pets.meta} onChange={setPetPage} /></section>
+    <section className="workspace-section"><div className="workspace-section-heading"><div><h2>Meus favoritos</h2><p>Salvos na sua conta, prontos para um novo encontro.</p></div><PanelIcon name="heart" /></div><div className="pet-grid">{pets.data.map(pet => <PetCard key={pet.id} pet={pet} />)}</div>
+      {petsLoading && !pets.data.length && <p className="workspace-empty" role="status">Carregando seus favoritos…</p>}
+      {!petsLoading && !pets.data.length && <div className="workspace-empty"><PanelIcon name="heart" /><strong>Aquele encontro que fica no coração</strong><p>Nenhum animal disponível nos seus favoritos.</p><Link to="/animais" className="text-link">Explorar o catálogo ↗</Link></div>}<Pagination page={petPage} meta={pets.meta} onChange={setPetPage} /></section>
   </PanelShell>
 }
 export function Pagination({ page, meta, onChange }) {
