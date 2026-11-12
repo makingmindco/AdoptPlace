@@ -9,8 +9,15 @@ export function Brand() {
 
 export function Header() {
   const [open, setOpen] = useState(false)
-  const { user, loading } = useAuth()
-  return <><a className="skip-link" href="#main">Pular para o conteúdo</a><header className="header"><div className="container header-inner"><Brand /><nav className={open ? 'is-open' : ''} aria-label="Navegação principal"><NavLink onClick={() => setOpen(false)} to="/" end>Adotar</NavLink><Link onClick={() => setOpen(false)} to="/#como-funciona">Como funciona</Link><Link onClick={() => setOpen(false)} to="/cadastro">Para ONGs</Link></nav><div className="header-actions">{!loading && <Link className="button button-small button-outline" to={user ? '/dashboard' : '/login'}>{user ? 'Meu painel' : 'Portal da ONG'} <span aria-hidden="true">↗</span></Link>}<button className="menu-button" type="button" aria-label={open ? 'Fechar menu' : 'Abrir menu'} aria-expanded={open} onClick={() => setOpen(!open)}><span /><span /></button></div></div></header></>
+  const { user, loading, logout } = useAuth()
+  const [leaving, setLeaving] = useState(false)
+  const [error, setError] = useState('')
+  async function signOut() {
+    setLeaving(true)
+    setError('')
+    try { await logout() } catch { setError('Não foi possível sair. Tente novamente.') } finally { setLeaving(false) }
+  }
+  return <><a className="skip-link" href="#main">Pular para o conteúdo</a><header className="header"><div className="container header-inner"><Brand /><nav className={open ? 'is-open' : ''} aria-label="Navegação principal"><NavLink onClick={() => setOpen(false)} to="/" end>Adotar</NavLink><Link onClick={() => setOpen(false)} to="/#como-funciona">Como funciona</Link><Link onClick={() => setOpen(false)} to="/cadastro">ONGs e protetores</Link></nav><div className="header-actions">{!loading && <Link className="button button-small button-outline" to={user ? user.role === 'adopter' ? '/#catalogo' : '/dashboard' : '/login'}>{user ? user.role === 'adopter' ? 'Explorar animais' : 'Meu painel' : 'Entrar'} <span aria-hidden="true">↗</span></Link>}{user && <button type="button" className="header-signout" disabled={leaving} onClick={signOut}>{leaving ? 'Saindo…' : 'Sair'}</button>}<button className="menu-button" type="button" aria-label={open ? 'Fechar menu' : 'Abrir menu'} aria-expanded={open} onClick={() => setOpen(!open)}><span /><span /></button></div></div>{error && <p className="container field-error" role="alert">{error}</p>}</header></>
 }
 
 export function Footer() {

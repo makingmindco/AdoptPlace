@@ -9,15 +9,17 @@ const sizeLabel = { small: 'Pequeno', medium: 'Médio', large: 'Grande' }
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
+  const approved = user?.organization?.verification_status === 'approved' || user?.role === 'admin'
   const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [requests, setRequests] = useState([])
   const [query, setQuery] = useState('')
   const [message, setMessage] = useState('')
   const [showForm, setShowForm] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(approved)
 
   useEffect(() => {
+    if (!approved) return
     Promise.all([api.organizationPets(), api.adoptionRequests()])
       .then(([petsResponse, requestsResponse]) => {
         setItems(petsResponse.data || [])
@@ -25,7 +27,7 @@ export default function Dashboard() {
       })
       .catch(error => setMessage(error.message))
       .finally(() => setLoading(false))
-  }, [])
+  }, [approved])
 
   async function signOut() { await logout(); navigate('/') }
   async function toggleAvailability(pet) {
@@ -47,7 +49,7 @@ export default function Dashboard() {
     <section className="dashboard-main"><span className="eyebrow">CADA CADASTRO, UMA NOVA CHANCE</span><h1>Seus bichinhos</h1><p className="muted">Acompanhe quem espera um lar e os novos pedidos de adoção.</p>
       {user?.organization?.verification_status !== 'approved' && <p className="notice">O cadastro está em análise. Você poderá gerenciar animais assim que a organização for aprovada.</p>}
       <div className="stats">{[['Animais cadastrados', items.length], ['Esperando um lar', available], ['Interesses recebidos', requests.length]].map(([label, count]) => <div key={label}><span>{label}</span><strong>{String(count).padStart(2, '0')}</strong></div>)}</div>
-      <div className="panel"><div className="panel-toolbar"><label className="field">Buscar por nome<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Digite o nome do animal" /></label><button className="button" onClick={() => setShowForm(value => !value)}>{showForm ? 'Fechar cadastro' : '+ Cadastrar animal'}</button></div>
+      <div className="panel"><div className="panel-toolbar"><label className="field">Buscar por nome<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Digite o nome do animal" /></label><button className="button" disabled={!approved} onClick={() => setShowForm(value => !value)}>{showForm ? 'Fechar cadastro' : '+ Cadastrar animal'}</button></div>
         {showForm && <PetForm onCreated={pet => { setItems(current => [pet, ...current]); setShowForm(false); setMessage('Animal cadastrado como rascunho. Revise e publique quando quiser.') }} />}
         {loading ? <p>Carregando animais…</p> : <div className="table-scroll"><table><caption className="sr-only">Animais da organização</caption><thead><tr><th>Animal</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead><tbody>
           {visible.map(pet => <tr key={pet.id}><td><Link className="table-pet" to={`/pets/${pet.slug}`}>{pet.cover_photo ? <img src={pet.cover_photo} alt="" /> : <span className="pet-thumb-placeholder">♡</span>}<strong>{pet.name}</strong></Link></td><td>{speciesLabel[pet.species] || pet.species}<small>{pet.approximate_age || 'Idade a confirmar'} · {sizeLabel[pet.size] || pet.size}</small></td><td><span className={`status ${pet.status === 'adopted' ? 'adopted' : ''}`}>{statusLabel[pet.status] || pet.status}</span></td><td>{['published', 'adopted', 'draft'].includes(pet.status) && <button className="text-button" onClick={() => toggleAvailability(pet)}>{pet.status === 'published' ? 'Marcar adotado' : 'Disponibilizar'}</button>}</td></tr>)}

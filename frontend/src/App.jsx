@@ -12,6 +12,7 @@ import { Header, Footer } from "./components/Layout";
 import Home from "./pages/Home";
 import PetDetail from "./pages/PetDetail";
 import Auth from "./pages/Auth";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import "./styles-v2.css";
 function ScrollToTop() {
@@ -30,6 +31,7 @@ function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
   if (loading) return <main className="container empty"><p>Carregando seu portal…</p></main>;
+  if (user?.role === 'adopter') return <Navigate to="/#catalogo" replace />;
   return user ? children : <Navigate to="/login" replace state={{ from: location.pathname }} />;
 }
 export default function App() {
@@ -43,7 +45,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/pets/:id" element={<PetDetail />} />
           <Route path="/login" element={<Auth key="login" />} />
-          <Route path="/cadastro" element={<Auth key="register" register />} />
+          <Route path="/cadastro" element={<Register />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/index.html" element={<Navigate to="/" replace />} />
           <Route

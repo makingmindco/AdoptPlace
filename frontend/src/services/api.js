@@ -18,10 +18,13 @@ export async function request(path, { body, headers, ...options } = {}) {
       ...headers,
     },
     ...(body ? { body: isFormData ? body : JSON.stringify(body) } : {}),
+  }).catch(error => {
+    if (error.name === 'AbortError') throw error
+    throw new Error('Não foi possível conectar ao serviço. Confira sua conexão e tente novamente.')
   })
   const data = response.status === 204 ? null : await response.json().catch(() => null)
   if (!response.ok) {
-    const error = new Error(data?.message || 'Não foi possível concluir. Tente novamente em instantes.')
+    const error = new Error(response.status >= 500 ? 'O serviço está indisponível no momento. Tente novamente em instantes.' : data?.message || 'Não foi possível concluir. Tente novamente em instantes.')
     error.status = response.status
     error.errors = data?.errors || {}
     throw error
@@ -30,7 +33,10 @@ export async function request(path, { body, headers, ...options } = {}) {
 }
 
 async function csrf() {
-  await fetch(`${backendOrigin}/sanctum/csrf-cookie`, { credentials: 'include' })
+  const response = await fetch(`${backendOrigin}/sanctum/csrf-cookie`, { credentials: 'include' }).catch(() => {
+    throw new Error('Não foi possível iniciar uma sessão. Confira sua conexão e tente novamente.')
+  })
+  if (!response.ok) throw new Error('Não foi possível iniciar uma sessão. Tente novamente em instantes.')
 }
 
 async function authenticatedMutation(path, options) {
@@ -41,6 +47,7 @@ async function authenticatedMutation(path, options) {
 const unwrap = payload => payload?.data ?? payload
 
 export const api = {
+  address: (cep, options) => request(`/address/cep/${encodeURIComponent(cep)}`, options),
   pets: params => request(`/pets?${new URLSearchParams(params || {})}`),
   pet: slug => request(`/pets/${slug}`).then(unwrap),
   adoptionRequest: (petId, body) => request(`/pets/${petId}/adoption-requests`, { method: 'POST', body }),
