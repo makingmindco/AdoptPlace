@@ -4,9 +4,13 @@ namespace Tests\Feature;
 
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Resources\AdoptionRequestResource;
+use App\Http\Resources\PetResource;
 use App\Models\AdoptionRequest;
+use App\Models\Organization;
+use App\Models\Pet;
 use App\Models\User;
 use App\Policies\AdoptionRequestPolicy;
+use App\Policies\PetPolicy;
 use Illuminate\Auth\Passwords\CacheTokenRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
@@ -107,6 +111,11 @@ class MarketplaceTest extends TestCase
         $user->organization_id = 'org-one';
         $this->assertFalse($policy->update($user, new AdoptionRequest(['organization_id' => 'org-two'])));
         $this->assertTrue($policy->update($user, new AdoptionRequest(['organization_id' => 'org-one'])));
+
+        $petPolicy = new PetPolicy;
+        $this->assertFalse($petPolicy->view($this->user(), new Pet));
+        $this->assertFalse($petPolicy->update($user, new Pet(['organization_id' => 'org-two'])));
+        $this->assertTrue($petPolicy->update($user, new Pet(['organization_id' => 'org-one'])));
     }
 
     public function test_password_broker_uses_expiring_cache_tokens(): void
@@ -134,5 +143,60 @@ class MarketplaceTest extends TestCase
         Password::shouldReceive('reset')->once()->andReturn(Password::INVALID_TOKEN);
         $this->postJson('/api/v1/auth/reset-password', ['email' => 'ana@example.test', 'token' => 'invalid', 'password' => 'Amigo#12', 'password_confirmation' => 'Amigo#12'])->assertUnprocessable();
         $this->postJson('/api/v1/auth/reset-password', ['email' => 'ana@example.test', 'token' => 'invalid', 'password' => 'Ab1!', 'password_confirmation' => 'Ab1!'])->assertUnprocessable()->assertJsonValidationErrors('password');
+    }
+
+    public function test_pet_and_related_models_store_native_arrays_and_read_legacy_json_strings(): void
+    {
+        $pet = new Pet([
+            'name' => 'Luna',
+            'location' => ['city' => 'Porto Ferreira', 'state' => 'SP'],
+            'photos' => [['id' => 'p1', 'url' => '/demo-pets/luna.png', 'path' => null]],
+            'health' => ['vaccinated' => true, 'neutered' => true],
+            'personality' => ['carinhosa', 'sociável'],
+        ]);
+
+        $rawAttributes = $pet->getAttributes();
+        $this->assertIsArray($rawAttributes['location']);
+        $this->assertIsArray($rawAttributes['photos']);
+        $this->assertIsArray($rawAttributes['health']);
+        $this->assertIsArray($rawAttributes['personality']);
+        $this->assertSame('Porto Ferreira', $rawAttributes['location']['city']);
+
+        $legacyPet = (new Pet)->newFromBuilder([
+            '_id' => 'legacy-pet-1',
+            'name' => 'Luna Legada',
+            'slug' => 'luna-legada',
+            'species' => 'dog',
+            'sex' => 'female',
+            'size' => 'medium',
+            'status' => 'published',
+            'location' => '{"city":"S\u00e3o Paulo","state":"SP"}',
+            'photos' => '[{"id":"demo-luna","url":"\/demo-pets\/luna.png","path":null}]',
+            'health' => '{"vaccinated":true,"neutered":true,"dewormed":true}',
+            'personality' => '["carinhosa","soci\u00e1vel"]',
+        ]);
+
+        $this->assertSame(['city' => 'São Paulo', 'state' => 'SP'], $legacyPet->location);
+        $this->assertSame([['id' => 'demo-luna', 'url' => '/demo-pets/luna.png', 'path' => null]], $legacyPet->photos);
+        $this->assertSame(['vaccinated' => true, 'neutered' => true, 'dewormed' => true], $legacyPet->health);
+        $this->assertSame(['carinhosa', 'sociável'], $legacyPet->personality);
+
+        $resourceData = (new PetResource($legacyPet))->resolve(Request::create('/'));
+        $this->assertSame('São Paulo', $resourceData['location']['city']);
+        $this->assertSame(['carinhosa', 'sociável'], $resourceData['personality']);
+
+        $organization = (new Organization)->newFromBuilder([
+            '_id' => 'org-legacy',
+            'name' => 'ONG Teste',
+            'social_links' => '{"instagram":"@amigosdepatas"}',
+        ]);
+        $this->assertSame(['instagram' => '@amigosdepatas'], $organization->social_links);
+
+        $adoptionRequest = (new AdoptionRequest)->newFromBuilder([
+            '_id' => 'req-legacy',
+            'status' => 'new',
+            'status_history' => '[{"status":"new","actor_id":"u1"}]',
+        ]);
+        $this->assertSame([['status' => 'new', 'actor_id' => 'u1']], $adoptionRequest->status_history);
     }
 }

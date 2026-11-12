@@ -72,11 +72,11 @@ test('adopter registration, session refresh and dashboard protection', async ({ 
   await expect(page.getByLabel('Rua / logradouro')).toHaveCount(0)
   await page.getByLabel('Autorizo o uso dos dados').check()
   await page.getByRole('button', { name: 'Criar minha conta gratuita' }).click()
-  await expect(page).toHaveURL(/\/#catalogo$/)
+  await expect(page).toHaveURL(/\/animais$/)
   await page.reload()
   await expect(page.getByRole('button', { name: 'Sair', exact: true })).toBeVisible()
   await page.goto('/dashboard')
-  await expect(page).toHaveURL(/\/#catalogo$/)
+  await expect(page).toHaveURL(/\/animais$/)
   await page.getByRole('button', { name: 'Sair', exact: true }).click()
   await expect(page.getByRole('link', { name: 'Entrar', exact: true })).toBeVisible()
 })
@@ -142,4 +142,93 @@ test('signup remains usable on mobile without horizontal overflow', async ({ pag
   await expect(page.getByLabel('Nome da ONG')).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await page.screenshot({ path: 'test-results/signup-mobile.png', fullPage: true })
+})
+
+test('switching accounts across admin, ngo, protector and adopter clears previous location.state.from and validates role destinations', async ({ page }) => {
+  const accounts = {
+    'admin@example.test': { id: 'u-admin', name: 'Admin', role: 'admin', email_verified_at: '2026-11-01T10:00:00Z' },
+    'ngo@example.test': { id: 'u-ngo', name: 'ONG Amigos', role: 'organization_owner', email_verified_at: '2026-11-01T10:00:00Z', organization: { id: 'o-1', name: 'ONG Amigos', type: 'ngo', verification_status: 'approved' } },
+    'protector@example.test': { id: 'u-prot', name: 'Carlos Protetor', role: 'organization_owner', email_verified_at: '2026-11-01T10:00:00Z', organization: { id: 'o-2', name: 'Carlos Protetor', type: 'independent_protector', verification_status: 'approved' } },
+    'adopter@example.test': { id: 'u-adopt', name: 'Mariana', role: 'adopter', email_verified_at: null },
+  }
+  let currentUser = null
+  let verificationShouldFail = true
+
+  await page.route('**/sanctum/csrf-cookie', route => route.fulfill({ status: 204 }))
+  await page.route('**/api/v1/**', async route => {
+    const url = new URL(route.request().url())
+    const path = url.pathname
+    const reply = (data, status = 200) => route.fulfill({ status, json: data })
+
+    if (path.endsWith('/auth/me')) return reply(currentUser ? { data: currentUser } : {}, currentUser ? 200 : 401)
+    if (path.endsWith('/auth/logout')) { currentUser = null; return reply({}) }
+    if (path.endsWith('/auth/login')) {
+      const body = route.request().postDataJSON()
+      currentUser = accounts[body.email] ? { ...accounts[body.email] } : null
+      return reply({ data: currentUser })
+    }
+    if (path.endsWith('/auth/email/verification-notification')) {
+      if (verificationShouldFail) {
+        return reply({ message: 'Não foi possível enviar o e-mail de confirmação no momento. Tente novamente em instantes.' }, 503)
+      }
+      return reply({ message: 'Link de verificação enviado.' })
+    }
+    if (path.endsWith('/organization/pets')) {
+      return reply({ data: [], meta: { current_page: 1, last_page: 1, total: 0 }, counts: { total: 0, published: 0, draft: 0, adoption_in_progress: 0, adopted: 0, archived: 0 } })
+    }
+    return reply({ data: [], meta: { current_page: 1, last_page: 1, total: 0 } })
+  })
+
+  // 1. Login as Admin -> /administracao -> verify sidebar catalog link points to /animais -> logout
+  await page.goto('/login')
+  await page.getByLabel('E-mail').fill('admin@example.test')
+  await page.getByLabel('Senha', { exact: true }).fill('Encontro#123')
+  await page.getByRole('button', { name: /Entrar na minha conta/i }).click()
+  await expect(page).toHaveURL(/\/administracao$/)
+  await expect(page.getByRole('link', { name: /Catálogo de animais/i })).toHaveAttribute('href', '/animais')
+  await page.getByRole('button', { name: 'Sair da conta' }).click()
+  await expect(page).toHaveURL(/\/login$/)
+
+  // 2. Login as NGO on the same page -> must go to /dashboard, NOT /administracao
+  await page.getByLabel('E-mail').fill('ngo@example.test')
+  await page.getByLabel('Senha', { exact: true }).fill('Encontro#123')
+  await page.getByRole('button', { name: /Entrar na minha conta/i }).click()
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await page.getByRole('button', { name: 'Sair da conta' }).click()
+  await expect(page).toHaveURL(/\/login$/)
+
+  // 3. Login as Independent Protector -> /dashboard -> logout
+  await page.getByLabel('E-mail').fill('protector@example.test')
+  await page.getByLabel('Senha', { exact: true }).fill('Encontro#123')
+  await page.getByRole('button', { name: /Entrar na minha conta/i }).click()
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await page.getByRole('button', { name: 'Sair da conta' }).click()
+  await expect(page).toHaveURL(/\/login$/)
+
+  // 4. Login as Adopter -> must go to /animais, NOT /dashboard
+  await page.getByLabel('E-mail').fill('adopter@example.test')
+  await page.getByLabel('Senha', { exact: true }).fill('Encontro#123')
+  await page.getByRole('button', { name: /Entrar na minha conta/i }).click()
+  await expect(page).toHaveURL(/\/animais$/)
+
+  // 5. Adopter visits /minha-conta -> tests SMTP 503 failure message -> then verifies email via /login?verified=1 while authenticated
+  await page.goto('/minha-conta')
+  await expect(page.getByText('Vamos confirmar seu e-mail?')).toBeVisible()
+  await page.getByRole('button', { name: 'Reenviar confirmação' }).click()
+  await expect(page.getByRole('status')).toContainText('Não foi possível enviar o e-mail de confirmação no momento.')
+  await expect(page.getByRole('status')).not.toContainText('Link de verificação enviado.')
+
+  verificationShouldFail = false
+  await page.getByRole('button', { name: 'Reenviar confirmação' }).click()
+  await expect(page.getByRole('status')).toContainText('Link de verificação enviado.')
+
+  // Simulate backend confirming email and redirecting authenticated user to /login?verified=1
+  currentUser = { ...currentUser, email_verified_at: '2026-11-12T10:00:00Z' }
+  await page.goto('/login?verified=1')
+  await expect(page).toHaveURL(/\/animais$/)
+
+  // Navigating back to /minha-conta shows email already verified without manual reload
+  await page.getByRole('link', { name: 'Minha conta' }).click()
+  await expect(page).toHaveURL(/\/minha-conta$/)
+  await expect(page.getByText('Vamos confirmar seu e-mail?')).toHaveCount(0)
 })
