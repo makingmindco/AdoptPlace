@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\BsonArray;
 use App\Enums\UserRole;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -31,6 +32,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'role',
         'organization_id',
+        'favorite_ids',
         'status',
         'last_login_at',
     ];
@@ -45,6 +47,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'remember_token',
         'address',
         'phone',
+        'favorite_ids',
     ];
 
     /**
@@ -61,6 +64,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'last_login_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'favorite_ids' => BsonArray::class,
         ];
     }
 

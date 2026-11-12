@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\BsonArray;
 use App\Enums\OrganizationStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use MongoDB\Laravel\Eloquent\Model;
@@ -28,7 +29,7 @@ class Organization extends Model
         return [
             'verification_status' => OrganizationStatus::class,
             'contact_publicly_visible' => 'boolean',
-            'social_links' => 'array',
+            'social_links' => BsonArray::class,
             'private_address' => 'encrypted:array',
             'approved_at' => 'datetime',
         ];

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\BsonArray;
 use App\Enums\PetStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use MongoDB\Laravel\Eloquent\Model;
@@ -24,10 +25,10 @@ class Pet extends Model
     {
         return [
             'birth_date' => 'date',
-            'personality' => 'array',
-            'health' => 'array',
-            'location' => 'array',
-            'photos' => 'array',
+            'personality' => BsonArray::class,
+            'health' => BsonArray::class,
+            'location' => BsonArray::class,
+            'photos' => BsonArray::class,
             'status' => PetStatus::class,
             'published_at' => 'datetime',
             'adopted_at' => 'datetime',

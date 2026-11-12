@@ -28,10 +28,12 @@ class EnsureMongoIndexes extends Command
                 [['status' => 1, 'published_at' => -1], []],
                 [['organization_id' => 1, 'status' => 1], []],
                 [['species' => 1, 'size' => 1, 'sex' => 1], []],
+                [['status' => 1, 'location.state' => 1, 'location.city' => 1], []],
                 [['name' => 'text', 'breed' => 'text', 'description' => 'text'], ['name' => 'pets_search']],
             ],
             'adoption_requests' => [
                 [['user_id' => 1, 'pet_id' => 1], ['unique' => true, 'partialFilterExpression' => ['user_id' => ['$type' => 'string']]]],
+                [['pet_id' => 1], ['unique' => true, 'name' => 'adoption_requests_one_approved_per_pet', 'partialFilterExpression' => ['status' => 'approved']]],
                 [['organization_id' => 1, 'review.status' => 1], []],
                 [['organization_id' => 1, 'status' => 1, 'created_at' => -1], []],
                 [['pet_id' => 1, 'created_at' => -1], []],

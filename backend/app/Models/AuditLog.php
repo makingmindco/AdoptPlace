@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\BsonArray;
 use MongoDB\Laravel\Eloquent\Model;
 
 class AuditLog extends Model
@@ -19,6 +20,6 @@ class AuditLog extends Model
 
     protected function casts(): array
     {
-        return ['metadata' => 'array', 'created_at' => 'datetime'];
+        return ['metadata' => BsonArray::class, 'created_at' => 'datetime'];
     }
 }
