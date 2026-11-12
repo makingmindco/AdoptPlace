@@ -43,7 +43,7 @@ export default function PetDetail() {
       <hr /><h3>Um lar é um compromisso para a vida.</h3><p>Conte um pouco sobre você para quem cuida de {pet.name}.</p>
       <button className="button full-width" onClick={() => setFormOpen(value => !value)}>{formOpen ? 'Fechar formulário' : `Quero adotar ${pet.name} ↗`}</button>
       <p className="small muted">Seus dados serão enviados somente à organização responsável.</p>
-      {pet.organization && <div className="organization"><span className="org-avatar">♡</span><div><strong>{pet.organization.name}</strong><small>{pet.organization.city}, {pet.organization.state}</small></div></div>}
+      {pet.organization && <Link className="organization" to={`/organizacoes/${pet.organization.slug}`}><span className="org-avatar">♡</span><div><strong>{pet.organization.name} ↗</strong><small>{pet.organization.city}, {pet.organization.state}</small><small>Conheça quem cuida de mim</small></div></Link>}
     </aside></div>
     {formOpen && <AdoptionForm pet={pet} onSuccess={() => { setFormOpen(false); setMessage('Interesse enviado! A organização entrará em contato com você.') }} />}
     <p role="status" className="feedback">{message}</p>

@@ -48,6 +48,8 @@ async function authenticatedMutation(path, options) {
 const unwrap = payload => payload?.data ?? payload
 
 export const api = {
+  publicOrganization: slug => request(`/organizations/${encodeURIComponent(slug)}`).then(unwrap),
+  publicOrganizationPets: (slug, page = 1) => request(`/organizations/${encodeURIComponent(slug)}/pets?page=${page}`),
   address: (cep, options) => lookupAddress(cep, request, options),
   pets: params => request(`/pets?${new URLSearchParams(params || {})}`),
   pet: slug => request(`/pets/${slug}`).then(unwrap),

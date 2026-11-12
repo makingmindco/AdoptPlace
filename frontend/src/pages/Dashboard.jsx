@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
+import OrganizationEditor from '../components/OrganizationEditor'
 
 const statusLabel = { draft: 'Rascunho', published: 'Disponível', adoption_in_progress: 'Em processo', adopted: 'Adotado', archived: 'Arquivado' }
 const speciesLabel = { dog: 'Cachorro', cat: 'Gato', other: 'Outro' }
@@ -48,6 +49,7 @@ export default function Dashboard() {
     </aside>
     <section className="dashboard-main"><span className="eyebrow">CADA CADASTRO, UMA NOVA CHANCE</span><h1>Seus bichinhos</h1><p className="muted">Acompanhe quem espera um lar e os novos pedidos de adoção.</p>
       {user?.organization?.verification_status !== 'approved' && <p className="notice">O cadastro está em análise. Você poderá gerenciar animais assim que a organização for aprovada.</p>}
+      <OrganizationEditor organization={user?.organization} />
       <div className="stats">{[['Animais cadastrados', items.length], ['Esperando um lar', available], ['Interesses recebidos', requests.length]].map(([label, count]) => <div key={label}><span>{label}</span><strong>{String(count).padStart(2, '0')}</strong></div>)}</div>
       <div className="panel"><div className="panel-toolbar"><label className="field">Buscar por nome<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Digite o nome do animal" /></label><button className="button" disabled={!approved} onClick={() => setShowForm(value => !value)}>{showForm ? 'Fechar cadastro' : '+ Cadastrar animal'}</button></div>
         {showForm && <PetForm onCreated={pet => { setItems(current => [pet, ...current]); setShowForm(false); setMessage('Animal cadastrado como rascunho. Revise e publique quando quiser.') }} />}

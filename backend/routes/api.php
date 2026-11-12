@@ -28,6 +28,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/pets', [PublicPetController::class, 'index']);
     Route::get('/pets/{slug}', [PublicPetController::class, 'show']);
     Route::get('/organizations/{slug}', [PublicOrganizationController::class, 'show']);
+    Route::get('/organizations/{slug}/pets', [PublicOrganizationController::class, 'pets']);
     Route::post('/pets/{pet}/adoption-requests', [AdoptionRequestController::class, 'store'])
         ->middleware('throttle:adoption-requests');
 

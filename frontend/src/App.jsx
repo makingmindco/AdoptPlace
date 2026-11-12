@@ -13,6 +13,7 @@ import Home from "./pages/Home";
 import PetDetail from "./pages/PetDetail";
 import Auth from "./pages/Auth";
 import Register from "./pages/Register";
+import Organization from "./pages/Organization";
 import Dashboard from "./pages/Dashboard";
 import "./styles-v2.css";
 function ScrollToTop() {
@@ -44,6 +45,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/pets/:id" element={<PetDetail />} />
+          <Route path="/organizacoes/:slug" element={<Organization />} />
           <Route path="/login" element={<Auth key="login" />} />
           <Route path="/cadastro" element={<Register />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
