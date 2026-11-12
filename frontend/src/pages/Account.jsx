@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useFavorites } from '../context/FavoritesContext'
 import { api } from '../services/api'
 import PetCard from '../components/PetCard'
+import PanelShell, { PanelIcon } from '../components/PanelShell'
 
 const statuses = { new: 'Interesse enviado', reviewing: 'Em análise', contacted: 'Em contato', approved: 'Aprovada — confirme após receber o animal', completed: 'Adoção concluída', rejected: 'Não aprovada', withdrawn: 'Cancelada por você' }
 export default function Account() {
@@ -30,10 +31,10 @@ function AccountContent({ user }) {
     setBusy(true); setMessage('')
     try { const result = await operation(); setMessage(result?.message || 'Atualizado com sucesso.'); setVersion(value => value + 1) } catch (error) { setMessage(Object.values(error.errors || {}).flat().join(' ') || error.message) } finally { setBusy(false) }
   }
-  return <main id="main" className="container detail"><h1>Olá, {user.name}</h1><p>Acompanhe seus encontros e os animais que conquistaram seu coração.</p>
-    {!user.email_verified_at && <div className="auth-notice"><p>Confirme seu e-mail pelo link enviado para sua caixa de entrada.</p><button className="button button-outline" disabled={busy} onClick={() => action(api.resendVerification)}>Reenviar confirmação</button></div>}
+  return <PanelShell title="Minha conta" subtitle={`Olá, ${user.name}. Acompanhe seus encontros e os animais que conquistaram seu coração.`}>
+    {!user.email_verified_at && <div className="account-verification"><span className="metric-icon"><PanelIcon name="shield" /></span><div><strong>Vamos confirmar seu e-mail?</strong><p>Confira o link enviado para sua caixa de entrada.</p></div><button className="button button-outline" disabled={busy} onClick={() => action(api.resendVerification)}>Reenviar confirmação</button></div>}
     <p role="status" className="feedback">{message}</p>
-    <section className="panel"><h2>Minhas adoções</h2>{!adoptions.data.length && <p>Você ainda não enviou solicitações. <Link to="/#catalogo">Conheça os animais disponíveis.</Link></p>}
+    <section className="workspace-section"><div className="workspace-section-heading"><div><h2>Minhas adoções</h2><p>Cada etapa de um novo começo, em um só lugar.</p></div><span className="workspace-badge">Acompanhamento</span></div>{!adoptions.data.length && <div className="workspace-empty"><PanelIcon name="heart" /><strong>Uma nova história pode começar aqui</strong><p>Você ainda não enviou solicitações.</p><Link className="button button-outline" to="/#catalogo">Conheça os animais disponíveis</Link></div>}
       {adoptions.data.map(item => <article key={item.id} className="adoption-item"><h3>{item.pet?.name || 'Animal indisponível'}</h3><p><strong>{statuses[item.status] || item.status}</strong></p>
         {item.pet?.organization && <Link to={`/organizacoes/${item.pet.organization.slug}`}>{item.pet.organization.name} ↗</Link>}
         {item.status === 'approved' && <button className="button" disabled={busy} onClick={() => { if (window.confirm('Você já recebeu o animal e deseja confirmar a adoção?')) action(() => api.adoptionAction(item.id, 'confirm')) }}>Recebi o animal: confirmar adoção</button>}
@@ -41,8 +42,8 @@ function AccountContent({ user }) {
         {item.status === 'completed' && (item.review ? <p>Avaliação enviada · {item.review.status === 'published' ? 'Publicada' : item.review.status === 'hidden' ? 'Não publicada' : 'Aguardando moderação'}</p> : <ReviewForm busy={busy} onSave={body => action(() => api.review(item.id, body))} />)}
       </article>)}<Pagination page={page} meta={adoptions.meta} onChange={setPage} />
     </section>
-    <section><h2>Meus favoritos</h2><p className="muted">Salvos na sua conta. Aqui aparecem apenas animais ainda disponíveis.</p><div className="pet-grid">{pets.data.map(pet => <PetCard key={pet.id} pet={pet} />)}</div>{!pets.data.length && <p>Nenhum animal disponível nos seus favoritos.</p>}<Pagination page={petPage} meta={pets.meta} onChange={setPetPage} /></section>
-  </main>
+    <section className="workspace-section"><div className="workspace-section-heading"><div><h2>Meus favoritos</h2><p>Salvos na sua conta, prontos para um novo encontro.</p></div><PanelIcon name="heart" /></div><div className="pet-grid">{pets.data.map(pet => <PetCard key={pet.id} pet={pet} />)}</div>{!pets.data.length && <div className="workspace-empty"><PanelIcon name="heart" /><strong>Aquele encontro que fica no coração</strong><p>Nenhum animal disponível nos seus favoritos.</p><Link to="/#catalogo" className="text-link">Explorar o catálogo ↗</Link></div>}<Pagination page={petPage} meta={pets.meta} onChange={setPetPage} /></section>
+  </PanelShell>
 }
 export function Pagination({ page, meta, onChange }) {
   if (!meta || meta.last_page <= 1 || !meta.last_page) return null

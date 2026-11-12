@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import OrganizationEditor from '../components/OrganizationEditor'
 import AdoptionManagement from '../components/AdoptionManagement'
+import PanelShell from '../components/PanelShell'
 
 const statusLabel = { draft: 'Rascunho', published: 'Disponível', adoption_in_progress: 'Em processo', adopted: 'Adotado', archived: 'Arquivado' }
 const speciesLabel = { dog: 'Cachorro', cat: 'Gato', other: 'Outro' }
 const sizeLabel = { small: 'Pequeno', medium: 'Médio', large: 'Grande' }
 
 export default function Dashboard() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const approved = user?.organization?.verification_status === 'approved' || user?.role === 'admin'
-  const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [requests, setRequests] = useState([])
   const [query, setQuery] = useState('')
@@ -31,7 +31,6 @@ export default function Dashboard() {
       .finally(() => setLoading(false))
   }, [approved])
 
-  async function signOut() { await logout(); navigate('/') }
   async function toggleAvailability(pet) {
     try {
       const makeAvailable = pet.status === 'adopted' || pet.status === 'draft'
@@ -43,12 +42,8 @@ export default function Dashboard() {
 
   const visible = items.filter(pet => pet.name.toLowerCase().includes(query.toLowerCase()))
   const available = items.filter(pet => pet.status === 'published').length
-  return <main id="main" className="container dashboard"><div className="dashboard-layout">
-    <aside className="sidebar"><span className="eyebrow">PORTAL DA ORGANIZAÇÃO</span><h3>{user?.organization?.name || user?.name}</h3>
-      <span className="sidebar-active">♡ Gerenciar animais</span><Link to="/#catalogo">↗ Ver catálogo público</Link><button className="text-button" onClick={signOut}>Sair da conta</button>
-      <p className="small muted">Status: {user?.organization?.verification_status === 'approved' ? 'organização verificada' : 'aguardando verificação'}</p>
-    </aside>
-    <section className="dashboard-main"><span className="eyebrow">CADA CADASTRO, UMA NOVA CHANCE</span><h1>Seus bichinhos</h1><p className="muted">Acompanhe quem espera um lar e os novos pedidos de adoção.</p>
+  return <PanelShell title="Seus bichinhos" subtitle={`${user?.organization?.name || user?.name} · Acompanhe quem espera um lar e os novos pedidos de adoção.`}>
+    <section className="dashboard-main">
       {user?.organization?.verification_status !== 'approved' && <p className="notice">O cadastro está em análise. Você poderá gerenciar animais assim que a organização for aprovada.</p>}
       <OrganizationEditor organization={user?.organization} />
       <div className="stats">{[['Animais cadastrados', items.length], ['Esperando um lar', available], ['Interesses recebidos', requests.length]].map(([label, count]) => <div key={label}><span>{label}</span><strong>{String(count).padStart(2, '0')}</strong></div>)}</div>
@@ -61,7 +56,7 @@ export default function Dashboard() {
       </div>
       {approved && <AdoptionManagement />}
     </section>
-  </div></main>
+  </PanelShell>
 }
 
 function PetForm({ onCreated }) {

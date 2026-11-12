@@ -37,6 +37,7 @@ function ProtectedRoute({ children }) {
   const location = useLocation();
   if (loading) return <main className="container empty"><p>Carregando seu portal…</p></main>;
   if (user?.role === 'adopter') return <Navigate to="/#catalogo" replace />;
+  if (user?.role === 'admin') return <Navigate to="/administracao" replace />;
   return user ? children : <Navigate to="/login" replace state={{ from: location.pathname }} />;
 }
 export default function App() {

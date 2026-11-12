@@ -21,7 +21,7 @@ export default function Auth() {
     try {
       const user = await auth.login(values)
       const from = location.state?.from
-      navigate(typeof from === 'string' && from.startsWith('/') && !from.startsWith('//') ? from : user.role === 'adopter' ? '/#catalogo' : '/dashboard', { replace: true })
+      navigate(typeof from === 'string' && from.startsWith('/') && !from.startsWith('//') ? from : user.role === 'adopter' ? '/#catalogo' : user.role === 'admin' ? '/administracao' : '/dashboard', { replace: true })
     } catch (error) {
       setMessage(Object.values(error.errors || {}).flat().join(' ') || error.message)
     } finally {
