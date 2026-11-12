@@ -18,10 +18,10 @@ class Organization extends Model
         'name', 'slug', 'type', 'document', 'description', 'city', 'state',
         'address', 'phone', 'whatsapp', 'email', 'social_links', 'logo_url',
         'verification_status', 'verification_notes', 'contact_publicly_visible',
-        'approved_at',
+        'approved_at', 'private_address',
     ];
 
-    protected $hidden = ['document', 'verification_notes'];
+    protected $hidden = ['document', 'verification_notes', 'private_address'];
 
     protected function casts(): array
     {
@@ -29,6 +29,7 @@ class Organization extends Model
             'verification_status' => OrganizationStatus::class,
             'contact_publicly_visible' => 'boolean',
             'social_links' => 'array',
+            'private_address' => 'encrypted:array',
             'approved_at' => 'datetime',
         ];
     }

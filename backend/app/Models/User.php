@@ -24,6 +24,9 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $fillable = [
         'name',
+        'phone',
+        'address',
+        'terms_accepted_at',
         'email',
         'password',
         'role',
@@ -40,6 +43,8 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $hidden = [
         'password',
         'remember_token',
+        'address',
+        'phone',
     ];
 
     /**
@@ -51,6 +56,8 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'address' => 'encrypted:array',
+            'terms_accepted_at' => 'datetime',
             'last_login_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,

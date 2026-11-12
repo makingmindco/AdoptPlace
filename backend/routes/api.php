@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AddressController;
 use App\Http\Controllers\Api\V1\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Api\V1\Admin\OrganizationController as AdminOrganizationController;
 use App\Http\Controllers\Api\V1\Admin\PetController as AdminPetController;
@@ -18,6 +19,7 @@ Route::get('/health', fn () => response()->json([
 ]));
 
 Route::prefix('v1')->group(function () {
+    Route::get('/address/cep/{cep}', [AddressController::class, 'show'])->middleware('throttle:30,1');
     Route::middleware('throttle:auth')->group(function () {
         Route::post('/auth/register', [AuthController::class, 'register']);
         Route::post('/auth/login', [AuthController::class, 'login']);

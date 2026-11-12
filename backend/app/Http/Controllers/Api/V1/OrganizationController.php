@@ -13,11 +13,14 @@ class OrganizationController extends Controller
 {
     public function show(Request $request): OrganizationResource
     {
+        abort_unless($request->user()->organization_id, 403);
+
         return new OrganizationResource($request->user()->organization);
     }
 
     public function update(UpdateOrganizationRequest $request, AuditService $audit): OrganizationResource
     {
+        abort_unless($request->user()->organization_id, 403);
         $organization = $request->user()->organization;
         $data = $request->validated();
 

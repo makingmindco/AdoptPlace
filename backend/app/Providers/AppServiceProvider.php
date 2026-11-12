@@ -28,8 +28,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
 
-        Password::defaults(fn () => Password::min(8)
+        Password::defaults(fn () => Password::min(10)
             ->mixedCase()
-            ->numbers());
+            ->numbers()
+            ->symbols());
     }
 }

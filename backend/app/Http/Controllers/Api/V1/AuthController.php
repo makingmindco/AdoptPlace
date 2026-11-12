@@ -13,6 +13,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -21,36 +22,51 @@ class AuthController extends Controller
     public function register(RegisterRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $slug = $this->uniqueOrganizationSlug($data['name']);
+        $isProvider = $data['account_type'] !== 'adopter';
+        $organization = null;
 
-        $organization = Organization::create([
-            'name' => $data['name'],
-            'slug' => $slug,
-            'type' => $data['type'] ?? 'ngo',
-            'city' => $data['city'],
-            'state' => strtoupper($data['state'] ?? ''),
-            'email' => strtolower($data['email']),
-            'verification_status' => OrganizationStatus::Pending,
-            'contact_publicly_visible' => false,
-        ]);
+        if ($isProvider) {
+            $organization = Organization::create([
+                'name' => $data['provider_name'],
+                'slug' => $this->uniqueOrganizationSlug($data['provider_name']),
+                'type' => $data['account_type'],
+                'city' => $data['address']['city'],
+                'state' => $data['address']['state'],
+                'private_address' => $data['address'],
+                'description' => $data['description'],
+                'phone' => $data['phone'],
+                'document' => $data['account_type'] === 'ngo' ? ($data['cnpj'] ?? null) : null,
+                'email' => strtolower($data['email']),
+                'verification_status' => OrganizationStatus::Pending,
+                'contact_publicly_visible' => false,
+            ]);
+        }
 
         try {
             $user = User::create([
-                'name' => $data['owner_name'] ?? $data['name'],
+                'name' => $data['name'],
+                'phone' => $data['phone'],
+                'address' => $isProvider ? $data['address'] : array_intersect_key($data['address'], array_flip(['cep', 'city', 'state'])),
+                'terms_accepted_at' => now(),
                 'email' => strtolower($data['email']),
                 'password' => $data['password'],
-                'role' => UserRole::OrganizationOwner,
-                'organization_id' => $organization->id,
+                'role' => $isProvider ? UserRole::OrganizationOwner : UserRole::Adopter,
+                'organization_id' => $organization?->id,
                 'status' => 'active',
             ]);
         } catch (\Throwable $exception) {
-            $organization->delete();
+            $organization?->delete();
             throw $exception;
         }
 
         Auth::login($user);
         $request->session()->regenerate();
-        $user->sendEmailVerificationNotification();
+        // A mail outage must not turn an already-created account into a failed registration.
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (\Throwable $exception) {
+            Log::warning('Verification email delivery failed', ['user_id' => (string) $user->id]);
+        }
 
         return (new UserResource($user->load('organization')))
             ->response()
