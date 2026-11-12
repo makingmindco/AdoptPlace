@@ -14,6 +14,10 @@ import PetDetail from "./pages/PetDetail";
 import Auth from "./pages/Auth";
 import Register from "./pages/Register";
 import Organization from "./pages/Organization";
+import Account from "./pages/Account";
+import Admin from "./pages/Admin";
+import PasswordRecovery from "./pages/PasswordRecovery";
+import Privacy from "./pages/Privacy";
 import Dashboard from "./pages/Dashboard";
 import "./styles-v2.css";
 function ScrollToTop() {
@@ -38,8 +42,8 @@ function ProtectedRoute({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
-      <FavoritesProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <FavoritesProvider>
         <ScrollToTop />
         <Header />
         <Routes>
@@ -48,6 +52,11 @@ export default function App() {
           <Route path="/organizacoes/:slug" element={<Organization />} />
           <Route path="/login" element={<Auth key="login" />} />
           <Route path="/cadastro" element={<Register />} />
+          <Route path="/minha-conta" element={<Account />} />
+          <Route path="/privacidade" element={<Privacy />} />
+          <Route path="/administracao" element={<Admin />} />
+          <Route path="/recuperar-senha" element={<PasswordRecovery />} />
+          <Route path="/redefinir-senha" element={<PasswordRecovery reset />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/index.html" element={<Navigate to="/" replace />} />
           <Route
@@ -75,8 +84,8 @@ export default function App() {
           />
         </Routes>
         <Footer />
-        </AuthProvider>
-      </FavoritesProvider>
+        </FavoritesProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

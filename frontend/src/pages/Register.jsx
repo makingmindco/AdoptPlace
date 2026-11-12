@@ -168,7 +168,8 @@ export default function Register() {
               <label className="checkbox-label"><input type="checkbox" checked={values.responsible_adoption} onChange={event => update('responsible_adoption', event.target.checked)} required /> Comprometo-me com adoções responsáveis e informações atualizadas sobre os animais.</label>
             </>}
             {!provider && <p className="small muted">Para adotar, precisamos apenas do CEP, cidade e estado. Seu endereço completo não será salvo.</p>}
-            <label className="checkbox-label"><input type="checkbox" checked={values.terms} onChange={event => update('terms', event.target.checked)} required /> Autorizo o uso dos dados informados para criar e administrar minha conta no AdoptPlace.</label>
+            <p className="small"><Link to="/privacidade" target="_blank" rel="noopener noreferrer">Leia como seus dados são utilizados e as regras de participação ↗</Link></p>
+            <label className="checkbox-label"><input type="checkbox" checked={values.terms} onChange={event => update('terms', event.target.checked)} required /> Autorizo o uso dos dados informados para criar e administrar minha conta no AdoptPlace, conforme as informações de privacidade.</label>
           </>}
         </fieldset>
         <FormAlert message={message} />

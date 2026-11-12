@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../services/api'
 import PetCard from '../components/PetCard'
+import Reviews from '../components/Reviews'
 
 export default function Organization() {
   const { slug } = useParams()
@@ -32,6 +33,7 @@ export default function Organization() {
         {!pets.length && <p>Nenhum animal disponível neste momento.</p>}
         {lastPage > 1 && <div className="register-actions"><button className="button button-outline" disabled={page === 1} onClick={() => { setBusy(true); setPage(page - 1) }}>Anterior</button><span>Página {page} de {lastPage}</span><button className="button" disabled={page === lastPage} onClick={() => { setBusy(true); setPage(page + 1) }}>Próxima</button></div>}
       </section>
+      <Reviews key={slug} slug={slug} />
     </>}
   </main>
 }

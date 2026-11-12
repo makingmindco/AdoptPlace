@@ -1751,6 +1751,16 @@ td small {
   }
 }
 
+.adoption-item { padding: 24px 0; border-bottom: 1px solid var(--cream-3); overflow-wrap: anywhere; }
+.adoption-item .button { margin: 12px 12px 0 0; }
+.adoption-item form { margin-top: 20px; max-width: 680px; }
+.recovery-card { max-width: 620px; margin: 0 auto; }
+.recovery-card h1 { font-size: 2rem; }
+@media (max-width: 760px) {
+  .header-actions { gap: 6px; }
+  .header-actions .header-signout { font-size: 12px; }
+  .adoption-item .button { width: 100%; margin-right: 0; }
+}
 .loading-spinner {
   display: inline-block;
   flex-shrink: 0;

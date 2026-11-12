@@ -48,6 +48,20 @@ async function authenticatedMutation(path, options) {
 const unwrap = payload => payload?.data ?? payload
 
 export const api = {
+  favorites: () => request('/account/favorites').then(unwrap),
+  favoritePets: (page = 1) => request(`/account/favorite-pets?page=${page}`),
+  saveFavorite: (id, selected) => request(`/account/favorites/${encodeURIComponent(id)}`, { method: selected ? 'PUT' : 'DELETE' }),
+  myAdoptions: (page = 1) => request(`/account/adoptions?page=${page}`),
+  adoptionAction: (id, action) => request(`/account/adoptions/${id}`, { method: 'PATCH', body: { action } }),
+  review: (id, body) => request(`/account/adoptions/${id}/review`, { method: 'POST', body }),
+  reviews: (slug, page = 1) => request(`/organizations/${encodeURIComponent(slug)}/reviews?page=${page}`),
+  forgotPassword: body => authenticatedMutation('/auth/forgot-password', { method: 'POST', body }),
+  resetPassword: body => authenticatedMutation('/auth/reset-password', { method: 'POST', body }),
+  resendVerification: () => request('/auth/email/verification-notification', { method: 'POST' }),
+  adminOrganizations: (page = 1) => request(`/admin/organizations?page=${page}`),
+  moderateOrganization: (id, body) => request(`/admin/organizations/${id}/status`, { method: 'PATCH', body }),
+  adminReviews: (page = 1, status = 'pending') => request(`/admin/reviews?page=${page}&status=${status}`),
+  moderateReview: (id, status) => request(`/admin/reviews/${id}`, { method: 'PATCH', body: { status } }),
   publicOrganization: slug => request(`/organizations/${encodeURIComponent(slug)}`).then(unwrap),
   publicOrganizationPets: (slug, page = 1) => request(`/organizations/${encodeURIComponent(slug)}/pets?page=${page}`),
   address: (cep, options) => lookupAddress(cep, request, options),
@@ -67,6 +81,6 @@ export const api = {
   publishPet: id => request(`/organization/pets/${id}/publish`, { method: 'POST' }).then(unwrap),
   markAdopted: id => request(`/organization/pets/${id}/mark-adopted`, { method: 'POST' }).then(unwrap),
   uploadPetPhoto: (id, body) => request(`/organization/pets/${id}/photos`, { method: 'POST', body }).then(unwrap),
-  adoptionRequests: () => request('/organization/adoption-requests'),
+  adoptionRequests: (page = 1) => request(`/organization/adoption-requests?page=${page}`),
   updateAdoptionRequest: (id, body) => request(`/organization/adoption-requests/${id}`, { method: 'PATCH', body }),
 }

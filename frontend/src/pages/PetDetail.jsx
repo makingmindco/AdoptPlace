@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const labels = { dog: 'Cachorro', cat: 'Gato', male: 'Macho', female: 'Fêmea', small: 'Pequeno', medium: 'Médio', large: 'Grande' }
 
 export default function PetDetail() {
+  const { user } = useAuth()
   const { id } = useParams()
   const [pet, setPet] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -45,7 +47,7 @@ export default function PetDetail() {
       <p className="small muted">Seus dados serão enviados somente à organização responsável.</p>
       {pet.organization && <Link className="organization" to={`/organizacoes/${pet.organization.slug}`}><span className="org-avatar">♡</span><div><strong>{pet.organization.name} ↗</strong><small>{pet.organization.city}, {pet.organization.state}</small><small>Conheça quem cuida de mim</small></div></Link>}
     </aside></div>
-    {formOpen && <AdoptionForm pet={pet} onSuccess={() => { setFormOpen(false); setMessage('Interesse enviado! A organização entrará em contato com você.') }} />}
+    {formOpen && (user ? <AdoptionForm pet={pet} onSuccess={() => { setFormOpen(false); setMessage('Interesse enviado! Acompanhe o andamento em Minha conta.') }} /> : <div className="auth-notice"><p>Entre na sua conta para enviar e acompanhar a solicitação.</p><Link className="button" to="/login" state={{ from: `/pets/${id}` }}>Entrar para continuar</Link></div>)}
     <p role="status" className="feedback">{message}</p>
   </main>
 }

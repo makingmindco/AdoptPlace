@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import OrganizationEditor from '../components/OrganizationEditor'
+import AdoptionManagement from '../components/AdoptionManagement'
 
 const statusLabel = { draft: 'Rascunho', published: 'Disponível', adoption_in_progress: 'Em processo', adopted: 'Adotado', archived: 'Arquivado' }
 const speciesLabel = { dog: 'Cachorro', cat: 'Gato', other: 'Outro' }
@@ -58,7 +59,7 @@ export default function Dashboard() {
         </tbody></table>{visible.length === 0 && <p className="empty">Nenhum animal encontrado.</p>}</div>}
         <p className="feedback" role="status">{message}</p>
       </div>
-      <section className="panel adoption-list"><h2>Interesses de adoção</h2>{requests.length === 0 ? <p className="muted">Nenhum interesse recebido até agora.</p> : requests.map(item => <article key={item.id} className="notice"><strong>{item.adopter?.name}</strong> quer conhecer <strong>{item.pet?.name}</strong><br /><small>{item.adopter?.email} · {item.adopter?.phone}</small></article>)}</section>
+      {approved && <AdoptionManagement />}
     </section>
   </div></main>
 }

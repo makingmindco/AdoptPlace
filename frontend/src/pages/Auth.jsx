@@ -20,7 +20,8 @@ export default function Auth() {
     setBusy(true)
     try {
       const user = await auth.login(values)
-      navigate(user.role === 'adopter' ? '/#catalogo' : location.state?.from || '/dashboard', { replace: true })
+      const from = location.state?.from
+      navigate(typeof from === 'string' && from.startsWith('/') && !from.startsWith('//') ? from : user.role === 'adopter' ? '/#catalogo' : '/dashboard', { replace: true })
     } catch (error) {
       setMessage(Object.values(error.errors || {}).flat().join(' ') || error.message)
     } finally {
@@ -49,6 +50,7 @@ export default function Auth() {
         <FormAlert message={message} />
         <SubmitButton busy={busy || auth.loading} busyLabel="Entrando na sua conta…">Entrar na minha conta ↗</SubmitButton>
       </form>
+      <p className="auth-switch"><Link to="/recuperar-senha">Esqueci minha senha</Link></p>
       <p className="auth-switch">Não tem cadastro ainda? <Link to="/cadastro">Crie sua conta gratuitamente</Link>.</p>
       <p className="small muted">Para quem quer adotar, ONGs e protetores individuais.</p>
     </section>
