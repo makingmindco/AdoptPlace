@@ -14,7 +14,8 @@ class PetPolicy
 
     public function view(User $user, Pet $pet): bool
     {
-        return (string) $user->organization_id === (string) $pet->organization_id;
+        return filled($user->organization_id)
+            && (string) $user->organization_id === (string) $pet->organization_id;
     }
 
     public function update(User $user, Pet $pet): bool

@@ -13,17 +13,25 @@ use App\Models\Pet;
 use App\Notifications\AdoptionRequestReceived;
 use App\Services\AuditService;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use MongoDB\Driver\Exception\BulkWriteException;
+use MongoDB\Driver\Exception\RuntimeException as MongoRuntimeException;
 
 class AdoptionRequestController extends Controller
 {
     public function store(StoreAdoptionRequest $request, Pet $pet): AdoptionRequestResource
     {
+        abort_if(
+            $pet->status === PetStatus::AdoptionInProgress || AdoptionRequest::hasApprovedForPet((string) $pet->id),
+            409,
+            'Este animal está reservado em processo de adoção e não recebe novas solicitações no momento.'
+        );
+        abort_if($pet->status === PetStatus::Adopted, 409, 'Este animal já foi adotado.');
         abort_unless($pet->status === PetStatus::Published, 404);
         abort_unless($pet->organization?->isApproved(), 404);
-        abort_if((string) $request->user()->organization_id === (string) $pet->organization_id, 403);
+        abort_if($request->user()->organization_id && (string) $request->user()->organization_id === (string) $pet->organization_id, 403);
         abort_if(AdoptionRequest::where('user_id', (string) $request->user()->id)->where('pet_id', $pet->id)->exists(), 409, 'Você já enviou uma solicitação para este animal. Acompanhe em Minha conta.');
         $data = $request->validated();
 
@@ -84,19 +92,82 @@ class AdoptionRequestController extends Controller
         $data = $request->validated();
         abort_if(in_array($adoptionRequest->status->value, ['completed', 'withdrawn', 'rejected']), 409, 'Esta solicitação já foi encerrada.');
         abort_unless(in_array($data['status'], ['reviewing', 'contacted', 'approved', 'rejected']), 422, 'Selecione uma etapa válida. A conclusão deve ser confirmada pelo adotante.');
-        $history = $adoptionRequest->status_history ?? [];
-        $history[] = [
-            'status' => $data['status'],
-            'changed_at' => now()->toISOString(),
-            'actor_id' => (string) $request->user()->id,
-        ];
 
-        $changed = AdoptionRequest::whereKey($adoptionRequest->id)->where('status', $adoptionRequest->status->value)->update([
-            'status' => $data['status'],
-            'internal_notes' => $data['internal_notes'] ?? $adoptionRequest->internal_notes,
-            'status_history' => $history,
-        ]);
-        abort_unless($changed, 409, 'A solicitação mudou. Atualize a página.');
+        try {
+            DB::connection('mongodb')->transaction(function () use ($request, $adoptionRequest, $data) {
+                $current = $adoptionRequest->fresh();
+                abort_if(! $current || in_array($current->status->value, ['completed', 'withdrawn', 'rejected']), 409, 'Esta solicitação já foi encerrada.');
+
+                $pet = Pet::find($current->pet_id);
+                abort_unless($pet, 404, 'Animal não encontrado.');
+                abort_if(
+                    in_array($pet->status, [PetStatus::Adopted, PetStatus::Archived, PetStatus::Draft], true),
+                    409,
+                    'Este animal não está disponível para atualização do processo de adoção.'
+                );
+
+                $previousStatus = $current->status->value;
+                $nextStatus = $data['status'];
+
+                if ($nextStatus === AdoptionRequestStatus::Approved->value) {
+                    abort_if(
+                        AdoptionRequest::hasApprovedForPet((string) $pet->id, (string) $current->id),
+                        409,
+                        'Já existe outra solicitação aprovada para este animal.'
+                    );
+
+                    if ($previousStatus !== AdoptionRequestStatus::Approved->value) {
+                        $reserved = Pet::whereKey($pet->id)
+                            ->where('status', PetStatus::Published->value)
+                            ->update(['status' => PetStatus::AdoptionInProgress->value]);
+                        abort_unless($reserved, 409, 'Este animal já está reservado ou indisponível para aprovação.');
+                    } elseif ($pet->status !== PetStatus::AdoptionInProgress) {
+                        Pet::whereKey($pet->id)
+                            ->where('status', PetStatus::Published->value)
+                            ->update(['status' => PetStatus::AdoptionInProgress->value]);
+                    }
+                }
+
+                $history = $current->status_history ?? [];
+                $historyEntry = [
+                    'status' => $nextStatus,
+                    'changed_at' => now()->toISOString(),
+                    'actor_id' => (string) $request->user()->id,
+                ];
+                if ($previousStatus === AdoptionRequestStatus::Approved->value && $nextStatus !== AdoptionRequestStatus::Approved->value) {
+                    $historyEntry['reason'] = 'Reserva liberada pela organização.';
+                }
+                $history[] = $historyEntry;
+
+                $changed = AdoptionRequest::whereKey($current->id)
+                    ->where('status', $previousStatus)
+                    ->update([
+                        'status' => $nextStatus,
+                        'internal_notes' => $data['internal_notes'] ?? $current->internal_notes,
+                        'status_history' => $history,
+                    ]);
+                abort_unless($changed, 409, 'A solicitação mudou. Atualize a página.');
+
+                if ($previousStatus === AdoptionRequestStatus::Approved->value && $nextStatus !== AdoptionRequestStatus::Approved->value) {
+                    if (! AdoptionRequest::hasApprovedForPet((string) $pet->id, (string) $current->id)) {
+                        Pet::whereKey($pet->id)
+                            ->where('status', PetStatus::AdoptionInProgress->value)
+                            ->update(['status' => PetStatus::Published->value]);
+                    }
+                }
+            });
+        } catch (BulkWriteException $exception) {
+            if ($exception->getCode() === 11000) {
+                abort(409, 'Já existe outra solicitação aprovada para este animal.');
+            }
+            throw $exception;
+        } catch (MongoRuntimeException $exception) {
+            if ($exception->hasErrorLabel('TransientTransactionError') || $exception->getCode() === 112 || $exception->getCode() === 11000) {
+                abort(409, 'Operação concorrente detectada para este animal. Atualize a página e tente novamente.');
+            }
+            throw $exception;
+        }
+
         $audit->record($request->user(), 'adoption_request.updated', $adoptionRequest, ['status' => $data['status']]);
 
         return new AdoptionRequestResource($adoptionRequest->fresh()->load('pet'));

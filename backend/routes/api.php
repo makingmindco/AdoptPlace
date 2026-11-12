@@ -53,7 +53,15 @@ Route::prefix('v1')->group(function () {
                 return response()->json(['message' => 'E-mail já verificado.']);
             }
 
-            $request->user()->sendEmailVerificationNotification();
+            try {
+                $request->user()->sendEmailVerificationNotification();
+            } catch (\Throwable $e) {
+                report($e);
+
+                return response()->json([
+                    'message' => 'Não foi possível enviar o e-mail de confirmação no momento. Tente novamente em instantes.',
+                ], 503);
+            }
 
             return response()->json(['message' => 'Link de verificação enviado.']);
         })->middleware('throttle:6,1');
@@ -67,6 +75,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/organization/pets/{pet}/publish', [OrganizationPetController::class, 'publish']);
             Route::post('/organization/pets/{pet}/mark-adopted', [OrganizationPetController::class, 'markAdopted']);
             Route::post('/organization/pets/{pet}/photos', [OrganizationPetController::class, 'uploadPhoto']);
+            Route::patch('/organization/pets/{pet}/photos/{photoId}', [OrganizationPetController::class, 'setCoverPhoto']);
             Route::delete('/organization/pets/{pet}/photos/{photoId}', [OrganizationPetController::class, 'deletePhoto']);
 
             Route::get('/organization/adoption-requests', [AdoptionRequestController::class, 'index']);
