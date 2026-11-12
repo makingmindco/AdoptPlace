@@ -2,7 +2,7 @@
 
 ## Arquitetura
 
-Laravel 13 expõe uma API versionada em `/api/v1`. O catálogo e o envio de interesse são públicos. Sessões de organizações usam cookies HttpOnly do Laravel Sanctum; políticas impedem uma organização de acessar animais ou pedidos de outra. MongoDB armazena usuários, organizações, animais, pedidos, tokens e auditoria.
+Laravel 13 expõe uma API versionada em `/api/v1`. O catálogo é público; o envio de interesse exige autenticação para permitir acompanhamento pela conta. Sessões usam cookies HttpOnly do Laravel Sanctum; políticas impedem uma organização de acessar animais ou pedidos de outra. MongoDB armazena usuários, organizações, animais, pedidos, avaliações embutidas nos pedidos, tokens e auditoria.
 
 Dados pessoais do adotante são criptografados no documento de pedido. O histórico de mudanças e os logs de auditoria apoiam moderação e rastreabilidade.
 
@@ -12,7 +12,7 @@ Dados pessoais do adotante são criptografados no documento de pedido. O histór
 | --- | --- | --- |
 | GET | `/api/v1/pets` | público, filtros e paginação |
 | GET | `/api/v1/pets/{slug}` | público |
-| POST | `/api/v1/pets/{id}/adoption-requests` | público, limitado por IP |
+| POST | `/api/v1/pets/{id}/adoption-requests` | autenticado, limitado |
 | POST | `/api/v1/auth/register` | público |
 | POST | `/api/v1/auth/login` | público, limitado |
 | GET | `/api/v1/auth/me` | autenticado |
@@ -50,7 +50,7 @@ Para imagens em produção, configure `PET_MEDIA_DISK=s3` e as variáveis AWS/S3
 
 ## Próximas evoluções
 
-Recuperação de senha, interface de reenvio da confirmação de e-mail, edição completa/fotos no painel, busca geográfica, notificações ao adotante e testes de integração com um MongoDB isolado são extensões previstas. A base atual já separa esses domínios para permitir evolução incremental.
+Busca geográfica, notificações adicionais ao adotante e edição completa de fotos no painel são melhorias futuras. Os fluxos de conta, recuperação, confirmação de e-mail, favoritos, avaliações e testes MongoDB estão descritos abaixo.
 
 ## Cadastro por perfil — primeira etapa do marketplace
 
@@ -92,7 +92,7 @@ O consentimento de cadastro fica registrado em `terms_accepted_at`. Endereços n
 - `GET /api/v1/address/cep/{cep}` consulta o [ViaCEP](https://viacep.com.br/). Aceita oito dígitos, usa limite de 30 consultas/minuto por cliente e cache de 24 horas. Retorna `cep`, `street`, `neighborhood`, `city`, `state`.
 - Respostas: `422` para formato inválido, `404` para CEP inexistente, `503` para falha do serviço. O formulário permite preenchimento manual e cancela resultados antigos quando o CEP muda. Número e complemento são preenchidos pelo usuário.
 - O cadastro envia um link de confirmação para `/email/verify/{id}/{hash}` com assinatura e validade do Laravel. Após confirmar, redireciona para `/login?verified=1`.
-- Configure `APP_URL` com a URL pública da API, `FRONTEND_URL` com a URL do React e o transporte `MAIL_*` para entrega real. Uma falha no envio não desfaz uma conta já criada. O endpoint autenticado `POST /api/v1/auth/email/verification-notification` permite reenviar a confirmação, com limite de seis tentativas/minuto. A interface de reenvio e a obrigatoriedade de confirmação antes de publicar ficam para a próxima etapa.
+- Configure `APP_URL` com a URL pública da API, `FRONTEND_URL` com a URL do React e o transporte `MAIL_*` para entrega real. Uma falha no envio não desfaz uma conta já criada. O endpoint autenticado `POST /api/v1/auth/email/verification-notification` permite reenviar a confirmação, com limite de seis tentativas/minuto. A interface fica em Minha conta. Publicar animais exige e-mail confirmado.
 
 Não é necessário reinstalar o MongoDB nem recriar os dados para esses campos adicionais. Não execute novamente o seed para atualizar contas existentes.
 
@@ -113,11 +113,68 @@ Os testes PHP usam mocks para consulta de unicidade e ViaCEP; verificam regras d
 
 Esses testes não substituem o teste integrado de gravação no MongoDB e entrega de e-mail em homologação. Antes de disponibilizar o fluxo, testar os três cadastros em um banco isolado, a aprovação administrativa e o link de confirmação por um transporte de e-mail configurado.
 
-### Etapas seguintes
+## Marketplace: fluxos implementados
 
-1. Perfil público de ONG/protetor com animais disponíveis, edição do perfil e controles de visibilidade.
-2. Favoritos vinculados à conta e histórico de solicitações de adoção. Nesta etapa, os favoritos continuam no navegador e o catálogo continua público.
-3. Conclusão da adoção vinculada ao adotante e avaliações apenas de quem concluiu uma adoção, com moderação e prevenção de duplicidade.
-4. Verificação de prestadores, recuperação de senha, consentimentos/políticas completos e validação integrada para publicação.
+### Páginas
 
-Cada etapa deve ter seu próprio commit Conventional Commits após a validação correspondente.
+| Página | Uso |
+| --- | --- |
+| `/organizacoes/{slug}` | Perfil aprovado, animais disponíveis e avaliações publicadas |
+| `/dashboard` | Edição de perfil, contatos públicos, animais e andamento das solicitações |
+| `/minha-conta` | Favoritos da conta, solicitações, confirmação de adoção, avaliação e reenvio de confirmação de e-mail |
+| `/administracao` | Aprovação/suspensão de organizações e moderação de avaliações; exclusiva de administradores |
+| `/recuperar-senha` | Solicitar link de recuperação |
+| `/redefinir-senha?token=...&email=...` | Redefinir senha com token válido |
+| `/privacidade` | Explicação dos usos de dados e das regras de participação |
+
+O catálogo continua público. Visitantes continuam tendo favoritos locais; ao entrar, passam a ver os favoritos da conta, sem importar automaticamente os favoritos do navegador compartilhado. Favoritos são atualizados com operações atômicas de inclusão sem duplicidade e remoção. A lista mostra apenas animais disponíveis de organizações aprovadas.
+
+### Adoção e avaliação
+
+1. Um usuário autenticado envia interesse em um animal disponível de uma organização aprovada. Não pode solicitar um animal da própria organização. `user_id` vem da sessão e nunca do formulário.
+2. A organização consulta o interesse no painel e define `reviewing`, `contacted`, `approved` ou `rejected`. Anotações internas não são retornadas ao adotante.
+3. Em Minha conta, o adotante pode cancelar uma solicitação aberta (`withdrawn`). Depois de receber o animal, pode confirmar uma solicitação aprovada. Isso marca a solicitação como `completed` e o animal como `adopted` na mesma transação. O MongoDB precisa suportar transações, como o Atlas/replica set.
+4. Apenas o titular de uma solicitação concluída pode avaliá-la: nota de 1 a 5 e comentário de 10 a 1500 caracteres. A avaliação fica embutida na solicitação como documento BSON e é gravada uma única vez com atualização condicional.
+5. A avaliação nasce `pending`. O administrador publica (`published`) ou oculta (`hidden`). Somente avaliações publicadas de adoções concluídas entram na nota média e no perfil público. Nenhum dado de contato do adotante é publicado.
+
+Solicitações encerradas não podem ser alteradas pelo painel comum. Marcar um animal como adotado manualmente continua disponível para adoções externas, mas não cria uma adoção verificada nem habilita avaliações. Para o fluxo acompanhado, use a aprovação da solicitação e a confirmação pelo adotante. Solicitações antigas sem `user_id` permanecem visíveis à organização; não são associadas automaticamente a alguém pelo e-mail.
+
+### Novos endpoints
+
+| Método | Endpoint relativo a `/api/v1` | Acesso |
+| --- | --- | --- |
+| GET | `/account/favorites` e `/account/favorite-pets` | Conta autenticada |
+| PUT/DELETE | `/account/favorites/{petId}` | Conta autenticada |
+| GET | `/account/adoptions` | Apenas solicitações do usuário |
+| PATCH | `/account/adoptions/{id}` | Titular; `action: withdraw` ou `confirm` |
+| POST | `/account/adoptions/{id}/review` | Titular da adoção concluída |
+| GET | `/organizations/{slug}/pets` e `/organizations/{slug}/reviews` | Público, organização aprovada |
+| GET | `/admin/reviews?status=pending` | Administrador; também aceita `published` e `hidden` |
+| PATCH | `/admin/reviews/{id}` | Administrador; `status: published` ou `hidden` |
+| POST | `/auth/forgot-password` | Público, limitado |
+| POST | `/auth/reset-password` | Público, token e senha confirmada |
+
+### Recuperação e segurança de sessão
+
+O password broker do Laravel usa tokens criptograficamente seguros armazenados como hash no cache, com expiração de 60 minutos e intervalo mínimo de 60 segundos entre emissões por usuário. A resposta de solicitação é genérica para não informar se um e-mail existe. Limpar o cache invalida links pendentes. Em múltiplas instâncias, configure um cache compartilhado, por exemplo Redis.
+
+Após redefinir a senha, o token é consumido, o remember token é trocado, tokens pessoais são excluídos e a versão de sessão é alterada. A próxima requisição autenticada de uma sessão antiga é recusada. Contas inativas também são bloqueadas. As senhas exigem oito caracteres, maiúscula, minúscula, número e símbolo.
+
+### Índices e ativação
+
+Execute `php artisan mongodb:ensure-indexes` ao atualizar outros ambientes. Ele adiciona um índice único parcial em `adoption_requests(user_id, pet_id)` para novas solicitações vinculadas a contas e um índice para moderação. Solicitações antigas sem `user_id` não entram na restrição. Os índices foram aplicados no banco configurado nesta implementação, sem remoção de documentos. Não é preciso rodar seed.
+
+A entrega de e-mails depende do transporte SMTP configurado. Antes de publicar a plataforma para uso real, valide entrega de confirmação e recuperação, configure os dados de contato do operador e revise retenção e atendimento de pedidos de privacidade. A página `/privacidade` descreve os fluxos implementados; não constitui certificação jurídica de conformidade.
+
+### Testes integrados
+
+Além dos testes de navegador com API simulada, `MarketplaceMongoTest` executa gravações reais, permissões entre usuários, favoritos, solicitação duplicada, conclusão transacional, avaliação única, publicação da avaliação e redefinição de senha. Cria um banco exclusivo `adoptplace_test_<identificador>` e remove somente esse banco ao terminar. Notificações são simuladas para não enviar e-mails de teste.
+
+```powershell
+cd backend
+$env:RUN_MONGODB_INTEGRATION='1'
+php artisan test
+Remove-Item Env:RUN_MONGODB_INTEGRATION
+```
+
+Sem essa variável, o teste integrado é ignorado. Para executar, o usuário MongoDB precisa ter permissão para criar e remover o banco temporário. Nunca altere o teste para usar o nome do banco da aplicação. Validação desta entrega: 27 testes PHP com integração (116 verificações), 14 cenários de navegador, teste do indicador de senha, lint e build.
