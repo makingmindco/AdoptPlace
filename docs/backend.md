@@ -35,7 +35,15 @@ DB_DATABASE=adoptplace
 SANCTUM_STATEFUL_DOMAINS=localhost:5173
 ```
 
-Execute `php artisan mongodb:ensure-indexes` em cada novo banco. `php artisan db:seed` é apenas para desenvolvimento e cria a conta `ong@adoptplace.local` com senha `Adoptplace123`; nunca execute esse seed em produção.
+Em um banco de desenvolvimento novo e explicitamente selecionado, execute `php artisan mongodb:ensure-indexes`. O comando grava índices; não converte documentos legados. Não execute seeds para atualizar contas ou dados existentes. A Etapa 9A não cria dados demonstrativos.
+
+As instruções de Atlas, variáveis de ambiente e sessão Sanctum estão no [README](../README.md). Os dois `.env.example` foram conferidos contra as configurações utilizadas, sem leitura de arquivos `.env` reais. Não foi necessário alterá-los. O SMTP de exemplo (`mailpit:1025`) depende de um serviço externo ao projeto; configure um transporte acessível ou `MAIL_MAILER=log` no desenvolvimento, sem entrega real de e-mail. A URI local de exemplo exige MongoDB configurado como replica set para as transações; Atlas é uma alternativa.
+
+### Limites de upload
+
+`UploadPetPhotoRequest` valida imagens de até **5 MB por arquivo**. O limite da aplicação não aumenta os limites do PHP. `upload_max_filesize` pode ser menor (por exemplo, 2M), e `post_max_size` limita o corpo inteiro da requisição, incluindo os campos e o multipart. Isso pode impedir que o arquivo alcance a validação do Laravel.
+
+Consulte o arquivo carregado com `php --ini`. Como exemplo de configuração local, `upload_max_filesize=5M` e `post_max_size=8M` permitem margem para o formulário. Reinicie o processo PHP após ajustes e confira também limites do servidor/proxy em hospedagem. Os valores efetivos da máquina não foram inspecionados nem alterados na Etapa 9A.
 
 Para imagens em produção, configure `PET_MEDIA_DISK=s3` e as variáveis AWS/S3. Para notificações assíncronas, troque `QUEUE_CONNECTION=sync` por um driver de fila e mantenha um worker ativo.
 
@@ -48,9 +56,17 @@ Para imagens em produção, configure `PET_MEDIA_DISK=s3` e as variáveis AWS/S3
 - Configure o frontend com `VITE_API_URL=https://api.seudominio.org/api/v1` antes de `npm run build` e fallback SPA para `index.html`.
 - Configure SMTP, monitoramento, rotação de logs, política de retenção/eliminação de dados e termos de privacidade antes de aceitar dados reais.
 
-## Próximas evoluções
+## Estado funcional documentado
 
-Busca geográfica, notificações adicionais ao adotante e edição completa de fotos no painel são melhorias futuras. Os fluxos de conta, recuperação, confirmação de e-mail, favoritos, avaliações e testes MongoDB estão descritos abaixo.
+Já estão implementados catálogo dedicado com filtros e paginação, edição de animais, gestão de fotos (upload, exclusão e escolha de capa), galeria no detalhe, reserva de adoção e encerramento dos demais interesses após conclusão. Os fluxos de conta, recuperação, confirmação de e-mail, favoritos, avaliações e testes MongoDB estão descritos abaixo. Esta etapa documenta o escopo existente, sem propor novas funcionalidades.
+
+### Persistência BSON e compatibilidade legada
+
+`App\Casts\BsonArray` grava arrays/subdocumentos BSON nativos e normaliza a leitura de arrays e strings JSON legadas. É utilizado em `Pet` (`personality`, `health`, `location`, `photos`), `AdoptionRequest.status_history`, `Organization.social_links`, `AuditLog.metadata` e `User.favorite_ids`. Avaliações ficam embutidas em `adoption_requests.review` como documento BSON.
+
+Essa compatibilidade evita depender do cast genérico `array`, que na integração MongoDB pode armazenar JSON como string. Os filtros públicos de cidade e estado em `PublicPetController` consultam tanto `location.city`/`location.state` quanto o formato JSON legado. Apenas ler um documento não o converte nem faz uma migração em massa; compatibilidade do cast também não substitui o tratamento de consultas a campos aninhados.
+
+Os campos pessoais `User.address`, `Organization.private_address` e `AdoptionRequest.adopter` continuam com `encrypted:array`, pois precisam permanecer criptografados. Preserve a `APP_KEY`. Não foram consultados documentos ou tipos de dados efetivos do Atlas nesta etapa.
 
 ## Cadastro por perfil — primeira etapa do marketplace
 
@@ -119,6 +135,9 @@ Esses testes não substituem o teste integrado de gravação no MongoDB e entreg
 
 | Página | Uso |
 | --- | --- |
+| `/` | Animais em destaque e acesso ao catálogo |
+| `/animais` | Catálogo público com filtros e paginação; `/catalogo` redireciona para esta rota |
+| `/pets/{slug}` | Detalhe público do animal disponível, galeria e envio de interesse autenticado |
 | `/organizacoes/{slug}` | Perfil aprovado, animais disponíveis e avaliações publicadas |
 | `/dashboard` | Edição de perfil, contatos públicos, animais e andamento das solicitações |
 | `/minha-conta` | Favoritos da conta, solicitações, confirmação de adoção, avaliação e reenvio de confirmação de e-mail |
@@ -127,9 +146,22 @@ Esses testes não substituem o teste integrado de gravação no MongoDB e entreg
 | `/redefinir-senha?token=...&email=...` | Redefinir senha com token válido |
 | `/privacidade` | Explicação dos usos de dados e das regras de participação |
 
-O catálogo continua público. Visitantes continuam tendo favoritos locais; ao entrar, passam a ver os favoritos da conta, sem importar automaticamente os favoritos do navegador compartilhado. Favoritos são atualizados com operações atômicas de inclusão sem duplicidade e remoção. A lista mostra apenas animais disponíveis de organizações aprovadas.
+O catálogo continua público. A ação de favoritar nos cartões exige login e redireciona o visitante, preservando o destino de retorno. O contexto mantém compatibilidade com favoritos locais legados, sem importá-los automaticamente para a conta. Favoritos autenticados são atualizados com operações atômicas de inclusão sem duplicidade e remoção. A lista mostra apenas animais disponíveis de organizações aprovadas.
 
 ### Adoção e avaliação
+
+| Ação | Solicitação | Animal |
+| --- | --- | --- |
+| Enviar interesse | `new` | Continua `published` |
+| Analisar ou contatar | `reviewing` ou `contacted` | Continua disponível, salvo reserva de outro candidato |
+| Aprovar candidato | `approved` | `adoption_in_progress` (reservado) |
+| Desistir da candidatura aprovada | `withdrawn` | Volta a `published` quando a reserva é liberada |
+| Rejeitar ou retornar a aprovação para análise/contato | `rejected`, `reviewing` ou `contacted` | Libera a reserva conforme as condições abaixo |
+| Confirmar recebimento pelo titular | `completed`; demais abertas encerradas como `rejected` | `adopted` |
+| Registrar adoção externa | Abertas encerradas como `rejected`, sem gerar `completed` | `adopted`; bloqueada se houver aprovação ativa |
+| Republicar | Preserva histórico e avaliações | `published`; bloqueada se houver aprovação ativa |
+
+Solicitações `completed`, `withdrawn` e `rejected` são encerradas e não podem ser reabertas pelos endpoints comuns. Desistir não desfaz uma adoção já concluída. Republicar um animal é uma operação distinta e não permite reenviar uma candidatura já existente para o mesmo par usuário/animal.
 
 1. Um usuário autenticado envia interesse em um animal disponível (`published`) de uma organização aprovada. Não pode solicitar um animal da própria organização nem um animal reservado (`adoption_in_progress`) ou já adotado (`adopted`). `user_id` vem da sessão e nunca do formulário.
 2. A organização consulta o interesse no painel e define `reviewing`, `contacted`, `approved` ou `rejected`. Anotações internas não são retornadas ao adotante.
@@ -164,19 +196,35 @@ Após redefinir a senha, o token é consumido, o remember token é trocado, toke
 
 ### Índices e ativação
 
-Execute `php artisan mongodb:ensure-indexes` ao atualizar outros ambientes. Ele adiciona um índice único parcial em `adoption_requests(user_id, pet_id)` para novas solicitações vinculadas a contas e um índice para moderação. Solicitações antigas sem `user_id` não entram na restrição. Os índices foram aplicados no banco configurado nesta implementação, sem remoção de documentos. Não é preciso rodar seed.
+O comando `php artisan mongodb:ensure-indexes` define, entre outros, o índice único parcial em `adoption_requests(user_id, pet_id)` para solicitações com `user_id` do tipo string, o índice único parcial `adoption_requests_one_approved_per_pet` para status `approved` e índices de moderação. A proteção de uma aprovação por animal depende da instalação desse índice no ambiente, além das regras transacionais da API.
+
+A existência dos índices no Atlas não foi verificada na Etapa 9A. A execução do comando deve ocorrer apenas no ambiente autorizado e pode falhar se dados existentes violarem a unicidade; não remove nem corrige duplicidades automaticamente. Não é preciso executar seed. A restrição `(user_id, pet_id)` permanece após encerramento ou republicação: o mesmo usuário não pode criar outra candidatura para aquele animal.
 
 A entrega de e-mails depende do transporte SMTP configurado. Antes de publicar a plataforma para uso real, valide entrega de confirmação e recuperação, configure os dados de contato do operador e revise retenção e atendimento de pedidos de privacidade. A página `/privacidade` descreve os fluxos implementados; não constitui certificação jurídica de conformidade.
 
 ### Testes integrados
 
-Além dos testes de navegador com API simulada, `MarketplaceMongoTest` executa gravações reais, permissões entre usuários, favoritos, solicitação duplicada, conclusão transacional, avaliação única, publicação da avaliação e redefinição de senha. Cria um banco exclusivo `adoptplace_test_<identificador>` e remove somente esse banco ao terminar. Notificações são simuladas para não enviar e-mails de teste.
+Além dos testes de navegador com API simulada, `MarketplaceMongoTest` contém verificações de gravação BSON e leitura/filtros legados, permissões, favoritos, reserva, desistência, rejeição, conclusão transacional, adoção externa, republicação, gestão de animais/fotos, avaliações e redefinição de senha. São testes da API/persistência, sem navegador React. A presença desses testes no código não comprova sua execução nesta etapa nem uma cobertura exaustiva de concorrência.
+
+A suíte usa a URI configurada e substitui o nome do banco por `adoptplace_test_<identificador>`, removendo esse banco temporário ao terminar. Antes de executá-la, configure uma conexão de teste isolada, sem usar credenciais ou infraestrutura do banco principal. Notificações são simuladas para não enviar e-mails.
 
 ```powershell
 cd backend
 $env:RUN_MONGODB_INTEGRATION='1'
-php artisan test
-Remove-Item Env:RUN_MONGODB_INTEGRATION
+try { php artisan test } finally { Remove-Item Env:RUN_MONGODB_INTEGRATION }
 ```
 
-Sem essa variável, o teste integrado é ignorado. Para executar, o usuário MongoDB precisa ter permissão para criar e remover o banco temporário. Nunca altere o teste para usar o nome do banco da aplicação. Validação desta entrega: 27 testes PHP com integração (116 verificações), 14 cenários de navegador, teste do indicador de senha, lint e build.
+Sem essa variável, os testes integrados são ignorados. O usuário MongoDB precisa ter permissão para criar índices, gravar e remover os bancos temporários. Nunca altere o teste para usar o nome do banco da aplicação. Comandos das demais verificações estão no [README](../README.md#comandos-de-verificação).
+
+### Resultados históricos informados pelo Antigravity
+
+| Verificação | Resultado reportado | Natureza da evidência |
+| --- | --- | --- |
+| Backend | 34 testes aprovados, 288 asserções | Relato histórico; há testes PHP versionados, mas não foram executados na Etapa 9A |
+| Playwright | 19 testes aprovados | Relato histórico; os testes versionados interceptam e simulam a API |
+| Ponta a ponta real | 22 cenários aprovados | Relato de execução React + Laravel + MongoDB; não foram localizados roteiros/resultados versionados que comprovem esses 22 cenários |
+| Lint e build | Sem erros | Relato histórico; não executados na Etapa 9A |
+
+Os testes Playwright simulados não equivalem aos cenários reais: validam a interface e seus contratos simulados, sem provar sessão, persistência e integração com a API real. Os testes PHP com MongoDB verificam persistência em banco temporário, mas também não substituem um fluxo completo no navegador com backend real.
+
+Os números acima foram fornecidos pelo usuário como resultados do Antigravity. A Etapa 9A não confirma data, ambiente ou commit exato dessas execuções, nem revalida as contagens de aprovação. Nenhuma suíte, lint ou build foi executada nesta etapa documental. As contagens antigas de 27 testes PHP/14 cenários de navegador foram retiradas para não representar incorretamente a entrega atual.
