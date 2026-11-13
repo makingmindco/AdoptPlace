@@ -158,6 +158,5 @@ O Antigravity **reportou** 34 testes backend aprovados (288 asserções), 19 tes
 - `backend/app/Models`, `Casts`, `Policies`: documentos, compatibilidade BSON/JSON e autorização.
 - `backend/tests` e `frontend/tests`: testes automatizados versionados.
 - `docs/backend.md`: contratos, persistência, regras e implantação.
-- `design-system.html`: referência visual.
 
 A Etapa 9A consolida documentação. Demonstração, novas execuções de validação e demais etapas dependem de autorização posterior.
