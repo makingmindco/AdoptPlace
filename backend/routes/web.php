@@ -26,6 +26,10 @@ Route::get('/email/verify/{id}/{hash}', function (Request $request, string $id, 
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Keep backend namespaces and missing static files out of the SPA fallback.
+Route::get('/{spaPath?}', function () {
+    $entry = public_path('index.html');
+    abort_unless(is_file($entry), 503, 'Frontend build is not available. Use Vite for local development.');
+
+    return response()->file($entry, ['Cache-Control' => 'no-cache']);
+})->where('spaPath', '(?!(?:api|sanctum|email/verify|storage|assets|demo-pets)(?:/|$))(?:(?:index|login|dashboard|pet-detail)\.html|[^.]*)');

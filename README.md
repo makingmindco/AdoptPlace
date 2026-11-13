@@ -126,7 +126,7 @@ A partir de `backend`:
 composer test
 ```
 
-Sem `RUN_MONGODB_INTEGRATION=1`, os testes MongoDB são ignorados. Para integração, configure previamente uma conexão de teste isolada: a suíte usa a URI configurada, cria bancos `adoptplace_test_<identificador>` e os remove ao terminar. Não use credenciais ou infraestrutura do banco principal nessa execução.
+Sem `RUN_MONGODB_INTEGRATION=1`, os testes MongoDB são ignorados. Desde a 9D.5A, habilitar essa variável não basta: são obrigatórias URI exclusiva, nome temporário e confirmações descritos em [homologação MongoDB](docs/mongodb-homologation.md). Não há fallback para a URI da aplicação. Não use credenciais ou infraestrutura do banco principal nessa execução.
 
 ```powershell
 $env:RUN_MONGODB_INTEGRATION='1'

@@ -206,7 +206,7 @@ A entrega de e-mails depende do transporte SMTP configurado. Antes de publicar a
 
 Além dos testes de navegador com API simulada, `MarketplaceMongoTest` contém verificações de gravação BSON e leitura/filtros legados, permissões, favoritos, reserva, desistência, rejeição, conclusão transacional, adoção externa, republicação, gestão de animais/fotos, avaliações e redefinição de senha. São testes da API/persistência, sem navegador React. A presença desses testes no código não comprova sua execução nesta etapa nem uma cobertura exaustiva de concorrência.
 
-A suíte usa a URI configurada e substitui o nome do banco por `adoptplace_test_<identificador>`, removendo esse banco temporário ao terminar. Antes de executá-la, configure uma conexão de teste isolada, sem usar credenciais ou infraestrutura do banco principal. Notificações são simuladas para não enviar e-mails.
+A suíte exige `TEST_MONGODB_URI`, `TEST_MONGODB_DATABASE`, confirmação do nome e declaração de isolamento, sem fallback para a URI da aplicação. Consulte [o procedimento 9D.5A](mongodb-homologation.md) antes de executar os comandos abaixo. Um banco com coleções preexistentes é recusado; a limpeza exige marcador de propriedade da execução. Notificações e Cloudinary são simulados; arquivos usam Storage::fake.
 
 ```powershell
 cd backend

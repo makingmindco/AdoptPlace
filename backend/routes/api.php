@@ -20,7 +20,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/health', fn () => response()->json([
     'status' => 'ok',
     'service' => 'adoptplace-api',
-]));
+]))->withoutMiddleware([
+    'throttle:api',
+    \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+]);
 
 Route::prefix('v1')->group(function () {
     Route::get('/address/cep/{cep}', [AddressController::class, 'show'])->middleware('throttle:30,1');

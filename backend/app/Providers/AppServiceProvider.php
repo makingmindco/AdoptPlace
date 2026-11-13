@@ -17,7 +17,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        $this->app->bind(\App\Contracts\HomologationCloudinaryClient::class, \App\Services\Photos\HomologationSdkClient::class);
+        $this->app->bind(\App\Contracts\CloudinaryClient::class, \App\Services\Photos\SdkCloudinaryClient::class);
+        $this->app->bind(\App\Contracts\PhotoStorage::class, function ($app) {
+            return match (config('photos.provider')) {
+                'local' => $app->make(\App\Services\Photos\LocalPhotoStorage::class),
+                'cloudinary' => $app->make(\App\Services\Photos\CloudinaryPhotoStorage::class),
+                default => throw new \RuntimeException('Unsupported photo storage provider.'),
+            };
+        });
     }
 
     /**

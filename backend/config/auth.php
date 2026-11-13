@@ -91,6 +91,7 @@ return [
     'passwords' => [
         'users' => [
             'driver' => 'cache',
+            'store' => env('PASSWORD_RESET_STORE', env('APP_ENV') === 'production' ? 'mongodb_passwords' : null),
             'provider' => 'users',
             'table' => 'password_resets',
             'expire' => 60,

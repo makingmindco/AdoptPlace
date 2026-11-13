@@ -1,0 +1,4 @@
+# Container scripts must remain executable by Linux even on Windows checkouts.
+/Dockerfile text eol=lf
+/.dockerignore text eol=lf
+/docker/* text eol=lf

@@ -15,7 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use App\Services\Photos\PhotoManager;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use MongoDB\BSON\Regex;
@@ -227,7 +227,7 @@ class OrganizationPetController extends Controller
         return new PetResource($pet->fresh()->load('organization'));
     }
 
-    public function uploadPhoto(UploadPetPhotoRequest $request, Pet $pet, AuditService $audit): PetResource
+    public function uploadPhoto(UploadPetPhotoRequest $request, Pet $pet, AuditService $audit, PhotoManager $photos): PetResource
     {
         $this->authorize('update', $pet);
 
@@ -237,25 +237,22 @@ class OrganizationPetController extends Controller
             ]);
         }
 
-        $disk = config('filesystems.pet_media_disk', 'public');
-        $path = $request->file('photo')->storePublicly('pets/'.$pet->id, $disk);
+        $photo = $photos->uploadAndPersist($request->file('photo'), (string) $pet->id, function ($photo) use ($pet, $request) {
+            // Provider I/O stays outside the transaction; a conflicting write
+            // rolls back and triggers compensation for this unique upload.
+            return $pet->getConnection()->transaction(function () use ($pet, $request, $photo) {
+                $current = $pet->fresh();
+                if (count($current->photos ?? []) >= 10) {
+                    throw ValidationException::withMessages(['photo' => ['O limite máximo é de 10 fotos por animal.']]);
+                }
+                $current->update([
+                    'photos' => [...($current->photos ?? []), $photo],
+                    'cover_photo' => ($request->boolean('is_cover') || ! $current->cover_photo) ? $photo['url'] : $current->cover_photo,
+                ]);
 
-        if (! $path) {
-            abort(500, 'Não foi possível armazenar a imagem.');
-        }
-
-        $photo = [
-            'id' => (string) Str::uuid(),
-            'path' => $path,
-            'url' => Storage::disk($disk)->url($path),
-        ];
-        $photos = [...($pet->photos ?? []), $photo];
-        $isCover = $request->boolean('is_cover') || ! $pet->cover_photo;
-
-        $pet->update([
-            'photos' => $photos,
-            'cover_photo' => $isCover ? $photo['url'] : $pet->cover_photo,
-        ]);
+                return $photo;
+            });
+        });
         $audit->record($request->user(), 'pet.photo_uploaded', $pet, ['photo_id' => $photo['id']]);
 
         return new PetResource($pet->fresh()->load('organization'));
@@ -264,39 +261,26 @@ class OrganizationPetController extends Controller
     public function setCoverPhoto(Request $request, Pet $pet, string $photoId, AuditService $audit): PetResource
     {
         $this->authorize('update', $pet);
-        $photos = collect($pet->photos ?? []);
-        $photo = $photos->firstWhere('id', $photoId);
-        abort_unless($photo && ! empty($photo['url']), 404);
-
-        $pet->update(['cover_photo' => $photo['url']]);
+        $pet->getConnection()->transaction(function () use ($pet, $photoId) {
+            $current = $pet->fresh();
+            $photo = collect($current->photos ?? [])->firstWhere('id', $photoId);
+            abort_unless($photo && ! empty($photo['url']), 404);
+            $current->update(['cover_photo' => $photo['url']]);
+        });
         $audit->record($request->user(), 'pet.cover_photo_updated', $pet, ['photo_id' => $photoId]);
 
         return new PetResource($pet->fresh()->load('organization'));
     }
 
-    public function deletePhoto(Request $request, Pet $pet, string $photoId, AuditService $audit): PetResource
+    public function deletePhoto(Request $request, Pet $pet, string $photoId, AuditService $audit, \App\Services\Photos\PhotoRemoval $removal, \App\Services\Photos\PhotoDeletionProcessor $processor): PetResource
     {
         $this->authorize('update', $pet);
-        $photos = collect($pet->photos ?? []);
-        $photo = $photos->firstWhere('id', $photoId);
-        abort_unless($photo, 404);
-
-        $remaining = $photos->reject(fn ($item) => $item['id'] === $photoId)->values()->all();
-        if (empty($remaining) && in_array($pet->status, [PetStatus::Published, PetStatus::AdoptionInProgress], true)) {
-            throw ValidationException::withMessages([
-                'photo' => ['Um animal publicado ou reservado precisa manter pelo menos uma foto. Adicione outra foto antes de remover a atual.'],
-            ]);
-        }
-
-        if (! empty($photo['path'])) {
-            Storage::disk(config('filesystems.pet_media_disk', 'public'))->delete($photo['path']);
-        }
-
-        $cover = $pet->cover_photo === $photo['url'] ? ($remaining[0]['url'] ?? null) : $pet->cover_photo;
-        $pet->update(['photos' => $remaining, 'cover_photo' => $cover]);
+        $task = $removal->remove($pet, $photoId, (string) $request->user()->id);
+        $cleaned = $processor->process($task);
         $audit->record($request->user(), 'pet.photo_deleted', $pet, ['photo_id' => $photoId]);
 
-        return new PetResource($pet->fresh()->load('organization'));
+        return (new PetResource($pet->fresh()->load('organization')))
+            ->additional(['photo_cleanup' => $cleaned ? 'completed' : 'pending']);
     }
 
     private function uniqueSlug(string $name, ?string $ignoreId = null): string

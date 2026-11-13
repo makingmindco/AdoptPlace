@@ -15,7 +15,8 @@ return [
     |
     */
 
-    'default' => env('CACHE_DRIVER', 'file'),
+    // CACHE_DRIVER is retained for existing environments and phpunit.xml.
+    'default' => env('CACHE_DRIVER', env('CACHE_STORE', env('APP_ENV') === 'production' ? 'mongodb' : 'file')),
 
     /*
     |--------------------------------------------------------------------------
@@ -32,6 +33,23 @@ return [
     */
 
     'stores' => [
+
+        'mongodb' => [
+            'driver' => 'mongodb',
+            'connection' => 'mongodb',
+            'collection' => 'adoptplace_runtime_cache',
+            'lock_connection' => 'mongodb',
+            'lock_collection' => 'adoptplace_runtime_cache_locks',
+        ],
+
+        // Keep password reset hashes out of the general cache collection.
+        'mongodb_passwords' => [
+            'driver' => 'mongodb',
+            'connection' => 'mongodb',
+            'collection' => 'adoptplace_runtime_password_resets',
+            'lock_connection' => 'mongodb',
+            'lock_collection' => 'adoptplace_runtime_password_locks',
+        ],
 
         'apc' => [
             'driver' => 'apc',

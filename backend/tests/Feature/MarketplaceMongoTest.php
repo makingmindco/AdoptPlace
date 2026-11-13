@@ -18,7 +18,111 @@ use Tests\TestCase;
 
 class MarketplaceMongoTest extends TestCase
 {
+    public function test_runtime_sessions_cache_and_reset_tokens_survive_driver_recreation(): void
+    {
+        config(['session.driver' => 'mongodb', 'session.lottery' => [0, 100]]);
+        $user = User::create(['name' => 'Runtime fixture', 'email' => 'runtime@example.test', 'password' => 'Runtime#123', 'role' => 'adopter', 'status' => 'active']);
+        $manager = $this->app['session'];
+        $session = $manager->driver('mongodb');
+        $session->start();
+        $guardKey = $this->app['auth']->guard('web')->getName();
+        $session->put($guardKey, (string) $user->id);
+        $session->regenerateToken();
+        $id = $session->getId();
+        $csrf = $session->token();
+        $session->save();
+        $manager->forgetDrivers();
+        $restored = $manager->driver('mongodb');
+        $restored->setId($id);
+        $restored->start();
+        $this->assertSame((string) $user->id, $restored->get($guardKey));
+        $guard = new \Illuminate\Auth\SessionGuard('web', $this->app['auth']->createUserProvider(config('auth.guards.web.provider')), $restored);
+        $this->assertSame((string) $user->id, (string) $guard->user()->id);
+        $this->assertSame($csrf, $restored->token());
+        $restored->invalidate();
+        $restored->regenerateToken();
+        $restored->save();
+        $this->assertSame(false, $restored->getHandler()->read($id));
+        $this->assertNotSame($csrf, $restored->token());
+
+        $connection = DB::connection('mongodb');
+        $collection = config('cache.stores.mongodb.collection');
+        $store = new \MongoDB\Laravel\Cache\MongoStore($connection, $collection);
+        $store->put('persisted', 'value', 120);
+        $freshStore = new \MongoDB\Laravel\Cache\MongoStore($connection, $collection);
+        $this->assertSame('value', $freshStore->get('persisted'));
+        $connection->getCollection($collection)->updateMany([], ['$set' => ['expires_at' => new \MongoDB\BSON\UTCDateTime((time() - 1) * 1000)]]);
+        $this->assertNull($freshStore->get('persisted'));
+
+        $passwordCollection = config('cache.stores.mongodb_passwords.collection');
+        $tokens = new \Illuminate\Auth\Passwords\CacheTokenRepository(new \Illuminate\Cache\Repository(new \MongoDB\Laravel\Cache\MongoStore($connection, $passwordCollection)), app('hash'), config('app.key'), 3600, 60);
+        $token = $tokens->create($user);
+        $freshTokens = new \Illuminate\Auth\Passwords\CacheTokenRepository(new \Illuminate\Cache\Repository(new \MongoDB\Laravel\Cache\MongoStore($connection, $passwordCollection)), app('hash'), config('app.key'), 3600, 60);
+        $this->assertTrue($freshTokens->exists($user, $token));
+        $this->assertTrue($freshTokens->recentlyCreatedToken($user));
+        $freshTokens->delete($user);
+        $this->assertFalse($freshTokens->exists($user, $token));
+
+        $session->getHandler()->write($id, 'expired fixture');
+        $connection->getCollection(config('session.table'))->updateOne(['_id' => $id], ['$set' => ['expires_at' => new \MongoDB\BSON\UTCDateTime((time() - 1) * 1000)]]);
+        $this->assertFalse($session->getHandler()->read($id));
+    }
+
+    public function test_photo_removal_rolls_back_metadata_if_pending_record_fails(): void
+    {
+        $pet = Pet::create(['name' => 'Rollback photo', 'status' => 'draft', 'photos' => [
+            ['id' => 'demo-one', 'path' => null, 'url' => '/demo-pets/luna.png'],
+        ], 'cover_photo' => '/demo-pets/luna.png']);
+        $event = 'eloquent.creating: '.\App\Models\PhotoDeletion::class;
+        \Illuminate\Support\Facades\Event::listen($event, fn () => throw new \RuntimeException('forced journal failure'));
+        try {
+            app(\App\Services\Photos\PhotoRemoval::class)->remove($pet, 'demo-one', 'actor');
+            $this->fail('Journal failure should roll back');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('forced journal failure', $e->getMessage());
+        } finally {
+            \Illuminate\Support\Facades\Event::forget($event);
+        }
+        $this->assertCount(1, $pet->fresh()->photos);
+        $this->assertSame('/demo-pets/luna.png', $pet->fresh()->cover_photo);
+        $this->assertSame(0, \App\Models\PhotoDeletion::where('pet_id', (string) $pet->id)->count());
+    }
+
+    public function test_overlapping_photo_snapshots_cannot_both_commit_an_eleventh_photo(): void
+    {
+        // Real two-session snapshot conflict, in the disposable database only.
+        $client = new Client(config('database.connections.mongodb.dsn'));
+        $collection = $client->selectCollection($this->testDatabase, 'pets');
+        $photos = array_fill(0, 9, ['id' => 'existing', 'url' => '/demo-pets/luna.png']);
+        $collection->insertOne(['_id' => 'concurrent-photo-test', 'photos' => $photos]);
+        $a = $client->startSession();
+        $b = $client->startSession();
+        try {
+            $a->startTransaction();
+            $b->startTransaction();
+            $collection->findOne(['_id' => 'concurrent-photo-test'], ['session' => $a]);
+            $collection->findOne(['_id' => 'concurrent-photo-test'], ['session' => $b]);
+            $collection->updateOne(['_id' => 'concurrent-photo-test'], ['$push' => ['photos' => ['id' => 'a']]], ['session' => $a]);
+            $a->commitTransaction();
+            try {
+                $collection->updateOne(['_id' => 'concurrent-photo-test'], ['$push' => ['photos' => ['id' => 'b']]], ['session' => $b]);
+                $b->commitTransaction();
+                $this->fail('Conflicting snapshot must not commit');
+            } catch (\MongoDB\Driver\Exception\RuntimeException $e) {
+                $this->assertTrue($e->getCode() === 112 || $e->hasErrorLabel('TransientTransactionError'));
+            }
+        } finally {
+            if ($a->isInTransaction()) { $a->abortTransaction(); }
+            if ($b->isInTransaction()) { $b->abortTransaction(); }
+            $a->endSession();
+            $b->endSession();
+        }
+        $this->assertCount(10, $collection->findOne(['_id' => 'concurrent-photo-test'])->photos);
+    }
+
     private ?string $testDatabase = null;
+    private ?Client $isolatedClient = null;
+    private ?string $ownership = null;
 
     protected function setUp(): void
     {
@@ -26,19 +130,53 @@ class MarketplaceMongoTest extends TestCase
         if (getenv('RUN_MONGODB_INTEGRATION') !== '1') {
             $this->markTestSkipped('Set RUN_MONGODB_INTEGRATION=1 to use a disposable MongoDB database.');
         }
-        $this->testDatabase = 'adoptplace_test_'.substr(str_replace('-', '', (string) Str::uuid()), 0, 16);
-        config(['database.connections.mongodb.database' => $this->testDatabase]);
+        $settings = [];
+        foreach (['TEST_MONGODB_URI', 'TEST_MONGODB_DATABASE', 'TEST_MONGODB_CONFIRM_DATABASE', 'TEST_MONGODB_ISOLATED'] as $key) {
+            $settings[$key] = getenv($key) ?: '';
+        }
+        [$uri, $name] = \Tests\Support\MongoIntegrationGuard::validate($settings);
+        $this->isolatedClient = new Client($uri);
+        $database = $this->isolatedClient->selectDatabase($name);
+        $this->assertSame([], iterator_to_array($database->listCollectionNames()), 'Refusing to reuse a database containing any collection.');
+        $nonce = bin2hex(random_bytes(24));
+        $database->selectCollection('_test_ownership')->insertOne(['_id' => 'owner', 'nonce' => $nonce]);
+        $this->testDatabase = $name;
+        $this->ownership = $nonce;
+        config(['database.connections.mongodb.database' => $name, 'database.connections.mongodb.dsn' => $uri,
+            'photos.provider' => 'local', 'filesystems.pet_media_disk' => 'public',
+            'session.driver' => 'array', 'cache.default' => 'array', 'auth.passwords.users.store' => 'array']);
         DB::purge('mongodb');
         Notification::fake();
+        Storage::fake('public');
+        $cloudinary = \Mockery::mock(\App\Contracts\CloudinaryClient::class);
+        $cloudinary->shouldNotReceive('upload');
+        $cloudinary->shouldNotReceive('destroy');
+        $this->app->instance(\App\Contracts\CloudinaryClient::class, $cloudinary);
         $this->artisan('mongodb:ensure-indexes')->assertSuccessful();
     }
 
     protected function tearDown(): void
     {
         try {
-            if ($this->testDatabase && preg_match('/^adoptplace_test_[a-f0-9]{16}$/', $this->testDatabase)) {
-                $client = new Client(config('database.connections.mongodb.dsn'));
-                $client->dropDatabase($this->testDatabase);
+            if ($this->ownership && $this->testDatabase && $this->isolatedClient) {
+                $marker = $this->isolatedClient->selectCollection($this->testDatabase, '_test_ownership')->findOne(['_id' => 'owner']);
+                if (($marker['nonce'] ?? null) !== $this->ownership) {
+                    throw new \RuntimeException('Ownership mismatch: automatic test database cleanup refused.');
+                }
+                if ($this->testDatabase !== \Tests\Support\MongoIntegrationGuard::DATABASE) {
+                    throw new \RuntimeException('Unexpected test database: cleanup refused.');
+                }
+                $database = $this->isolatedClient->selectDatabase($this->testDatabase);
+                $collections = \Tests\Support\MongoIntegrationGuard::cleanupCollections(iterator_to_array($database->listCollectionNames()));
+                foreach ($collections as $collection) {
+                    $marker = $database->selectCollection('_test_ownership')->findOne(['_id' => 'owner']);
+                    if (($marker['nonce'] ?? null) !== $this->ownership) {
+                        throw new \RuntimeException('Ownership changed: cleanup stopped.');
+                    }
+                    $database->dropCollection($collection);
+                }
+                // Marker is removed last, only after all authorized collections.
+                $database->dropCollection('_test_ownership');
             }
         } finally {
             parent::tearDown();
@@ -495,6 +633,7 @@ class MarketplaceMongoTest extends TestCase
             ->assertJsonCount(2, 'data.photos');
 
         $photo2 = $photo2Resp->json('data.photos.1');
+        $photo2Stored = \App\Models\Pet::find($petId)->photos[1];
         $this->assertSame($photo1['url'], $photo2Resp->json('data.cover_photo'));
 
         // Define a segunda foto como capa
@@ -521,6 +660,13 @@ class MarketplaceMongoTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data.photos')
             ->assertJsonPath('data.cover_photo', $photo1['url']);
+
+        $deletionId = \App\Models\PhotoDeletion::identifier((string) $petId, $photo2['id']);
+        $this->assertSame('completed', \App\Models\PhotoDeletion::find($deletionId)->status);
+        Storage::disk('public')->assertMissing($photo2Stored['path']);
+        $this->actingAs($ownerA)->deleteJson("/api/v1/organization/pets/{$petId}/photos/{$photo2['id']}")
+            ->assertOk()->assertJsonPath('photo_cleanup', 'completed');
+        $this->assertSame(1, \App\Models\PhotoDeletion::whereKey($deletionId)->count());
 
         // Impede remover a última foto enquanto o animal está publicado
         $this->actingAs($ownerA)

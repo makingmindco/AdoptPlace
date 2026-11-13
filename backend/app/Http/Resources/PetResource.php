@@ -23,7 +23,9 @@ class PetResource extends JsonResource
             'personality' => $this->personality ?? [],
             'health' => $this->health ?? [],
             'location' => $this->location ?? [],
-            'photos' => $this->photos ?? [],
+            'photos' => array_map(fn ($photo) => [
+                'id' => $photo['id'], 'url' => $photo['url'], 'path' => null,
+            ], $this->photos ?? []),
             'cover_photo' => $this->cover_photo,
             'status' => $this->status?->value ?? $this->status,
             'organization' => new OrganizationResource($this->whenLoaded('organization')),

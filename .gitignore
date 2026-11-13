@@ -1,0 +1,44 @@
+# Real environment files at any depth; safe templates stay versionable.
+.env
+.env.*
+!.env.example
+
+# Certificates, private keys and credential stores (never application source).
+*.pem
+*.key
+*.crt
+*.cer
+*.der
+*.p7b
+*.p7c
+*.p12
+*.pfx
+*.p8
+*.jks
+*.keystore
+auth.json
+.netrc
+id_rsa
+id_ed25519
+
+# Logs, local backups, editor scratch files and test caches.
+*.log
+*.log.*
+*.tmp
+*.temp
+*.bak
+*.old
+*.swp
+*.swo
+*~
+.phpunit*
+.DS_Store
+Thumbs.db
+
+# Private homologation manifests and their lock/image/temp files.
+**/storage/app/private/cloudinary-homologation/
+
+# Local tooling credentials and assistant state.
+.aws/
+.codex/
+.agents/
