@@ -214,13 +214,14 @@ test('switching accounts across admin, ngo, protector and adopter clears previou
   // 5. Adopter visits /minha-conta -> tests SMTP 503 failure message -> then verifies email via /login?verified=1 while authenticated
   await page.goto('/minha-conta')
   await expect(page.getByText('Vamos confirmar seu e-mail?')).toBeVisible()
+  const verificationFeedback = page.locator('.feedback[role="status"]')
   await page.getByRole('button', { name: 'Reenviar confirmação' }).click()
-  await expect(page.getByRole('status')).toContainText('Não foi possível enviar o e-mail de confirmação no momento.')
-  await expect(page.getByRole('status')).not.toContainText('Link de verificação enviado.')
+  await expect(verificationFeedback).toContainText('Não foi possível enviar o e-mail de confirmação no momento.')
+  await expect(verificationFeedback).not.toContainText('Link de verificação enviado.')
 
   verificationShouldFail = false
   await page.getByRole('button', { name: 'Reenviar confirmação' }).click()
-  await expect(page.getByRole('status')).toContainText('Link de verificação enviado.')
+  await expect(verificationFeedback).toContainText('Link de verificação enviado.')
 
   // Simulate backend confirming email and redirecting authenticated user to /login?verified=1
   currentUser = { ...currentUser, email_verified_at: '2026-11-12T10:00:00Z' }

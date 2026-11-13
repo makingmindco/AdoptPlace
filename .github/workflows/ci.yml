@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend quality and browser tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      CI: 'true'
+      VITE_API_URL: /api/v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Password strength tests
+        run: npm test
+      - name: Build
+        run: npm run build
+      # The existing Playwright configuration uses channel: msedge.
+      - name: Install Microsoft Edge and system dependencies
+        run: npx --no-install playwright install --with-deps msedge
+      - name: Playwright tests with mocked API
+        run: npm run test:e2e -- --forbid-only
+      - name: Upload browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failures
+          path: frontend/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  backend:
+    name: Backend tests without external database
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    # No repository secrets or Atlas connection are used. An accidental database
+    # query fails locally; no MongoDB service is started in this job.
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      APP_DEBUG: 'false'
+      APP_URL: http://localhost
+      FRONTEND_URL: http://localhost:5173
+      DB_CONNECTION: mongodb
+      DB_URI: mongodb://127.0.0.1:27017/?serverSelectionTimeoutMS=1000&connectTimeoutMS=1000
+      DB_DATABASE: adoptplace_ci
+      RUN_MONGODB_INTEGRATION: '0'
+      CACHE_DRIVER: array
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up PHP and Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mongodb-2.5.0, mbstring, dom, xml, xmlwriter, simplexml, libxml, ctype, curl, fileinfo, filter, hash, iconv, json, openssl, pcre, session, tokenizer
+          tools: composer:v2
+          coverage: none
+      - name: Locate Composer download cache
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+      - name: Cache Composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-php83-composer-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php83-composer-
+      - name: Install locked dependencies including test tools
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Verify actual platform requirements
+        run: composer check-platform-reqs
+      # Run all suites. MarketplaceMongoTest retains its existing opt-in guard
+      # and is reported as skipped because RUN_MONGODB_INTEGRATION is not 1.
+      - name: Unit and feature tests without Atlas
+        run: composer test

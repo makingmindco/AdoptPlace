@@ -135,6 +135,15 @@ try { php artisan test } finally { Remove-Item Env:RUN_MONGODB_INTEGRATION }
 
 O usuário de teste precisa poder criar índices, gravar e remover esses bancos temporários. Notificações são simuladas. Nunca substitua o nome temporário pelo banco da aplicação.
 
+### Integração contínua (Etapa 9C.1)
+
+`.github/workflows/ci.yml` executa dois jobs independentes em pushes para `main` e pull requests destinados a `main`:
+
+- **Frontend:** Node 24, `npm ci`, lint, teste Node do indicador de senha, build e Playwright com API simulada. O runner instala Edge, conforme a configuração existente; falhas de navegador disponibilizam os arquivos de `test-results` por sete dias.
+- **Backend:** PHP 8.3, extensão MongoDB 2.5.0, Composer 2, instalação pelo lockfile, verificação dos requisitos reais da plataforma e `composer test`. Cache, sessão e e-mail usam memória; a URI MongoDB aponta exclusivamente para localhost, sem serviço de banco. `RUN_MONGODB_INTEGRATION=0` mantém os testes Atlas opt-in ignorados explicitamente, sem excluir os demais testes.
+
+O workflow usa caches de downloads npm/Composer, não requer secrets e não executa deploy, migrations, seeders ou resets. Falhas nos comandos reprovam o respectivo job. Os testes reais de persistência/transações e os cenários completos React + Laravel + MongoDB ficam fora deste CI; exigem ambiente isolado e autorização própria. Para impedir também o merge de um PR com falhas, configure os dois jobs como verificações obrigatórias nas regras de proteção de `main` no GitHub.
+
 ### Resultados históricos
 
 O Antigravity **reportou** 34 testes backend aprovados (288 asserções), 19 testes Playwright aprovados, 22 cenários reais React + Laravel + MongoDB aprovados e lint/build sem erros. **Nenhuma dessas verificações foi executada na Etapa 9A.** Não foram localizadas evidências versionadas dos 22 cenários reais. Os números são relatos históricos, não certificação do estado atual. Veja [testes integrados](docs/backend.md#testes-integrados).
